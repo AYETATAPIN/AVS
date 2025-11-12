@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "761e03c2-c124-4b82-b40c-186010a013f0",
+      "feature_type": "address",
+      "properties": {
+        "address": "улица Пирогова, 1",
+        "unit": null,
+        "locality": "Новосибирск",
+        "province": "RU-NVS",
+        "country": "RU",
+        "postal_code": "630090",
+        "postal_code_ext": null,
+        "postal_code_vanity": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "f8a31ae4-c187-46f2-86e6-517b72adfa6d",
+      "feature_type": "address",
+      "properties": {
+        "address": "улица Пирогова, 2",
+        "unit": null,
+        "locality": "Новосибирск",
+        "province": "RU-NVS",
+        "country": "RU",
+        "postal_code": "630090",
+        "postal_code_ext": null,
+        "postal_code_vanity": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "914a2047-82f1-4076-991c-30a96d1fb60e",
+      "feature_type": "address",
+      "properties": {
+        "address": "улица Ляпунова, 1",
+        "unit": null,
+        "locality": "Новосибирск",
+        "province": "RU-NVS",
+        "country": "RU",
+        "postal_code": "630090",
+        "postal_code_ext": null,
+        "postal_code_vanity": null
+      },
+      "geometry": null
+    }
+  ]
+}

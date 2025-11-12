@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "574f2d42-9d0d-4f07-9a98-35c9eebd20a7",
+      "feature_type": "venue",
+      "properties": {
+        "address_id": "761e03c2-c124-4b82-b40c-186010a013f0",
+        "alt_name": {"ru": "НГУ", "en": "NSU"},
+        "category": "university",
+        "display_point": {
+          "type": "Point",
+          "coordinates": [83.0910411, 54.8429482]
+        },
+        "hours": null,
+        "name": {
+          "ru": "Новосибирский государственный университет",
+          "en": "Novosibirsk State University"
+        },
+        "phone": "+73833634333",
+        "restriction": null,
+        "website": "https://www.nsu.ru/n/"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [83.0904701, 54.8442346],
+            [83.0903755, 54.8443829],
+            [83.0898966, 54.8442955],
+            [83.0898187, 54.8444427],
+            [83.0874203, 54.8440777],
+            [83.0884986, 54.8419601],
+            [83.0961938, 54.8432743],
+            [83.0952309, 54.8449213],
+            [83.0947499, 54.8448196],
+            [83.0912755, 54.8443743],
+            [83.0904701, 54.8442346]
+          ]
+        ]
+      }
+    }
+  ]
+}
