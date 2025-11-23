@@ -334,116 +334,359 @@ body {
 .stat-value.good { color: #3b82f6; }
 .stat-value.fair { color: #f59e0b; }
 .stat-value.poor { color: #ef4444; }
-
-.stat-label {
-    color: #6b7280;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+/* Стили для навигации между видами */
+.view-navigation {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Адаптивность */
+.view-btn {
+    padding: 1rem 2rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    background: white;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.view-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.view-btn.active {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+}
+
+/* Стили для карты */
+.map-view {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: 70vh;
+    width: 100%; /* Добавляем полную ширину */
+    margin-bottom: 2rem; /* Отступ снизу */
+}
+
+#campus-map {
+    height: 100%;
+    width: 100%;
+    min-height: 500px; /* Минимальная высота */
+}
+
+/* Улучшаем адаптивность контейнера */
+.container {
+    max-width: 1400px; /* Увеличиваем максимальную ширину */
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+}
+
+/* Улучшаем отображение на мобильных */
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
     }
     
-    .header h1 {
-        font-size: 2rem;
+    .map-view {
+        height: 50vh;
+        min-height: 400px;
     }
     
     .filters {
         flex-direction: column;
         gap: 1rem;
-        align-items: stretch;
     }
     
     .filter-group select {
-        min-width: auto;
-    }
-    
-    .legend {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .classrooms-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .imdf-stats {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
-    .error {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
+        min-width: 100%;
     }
 }
-.data-status {
-    margin: 1rem 0;
-    padding: 1rem;
-    border-radius: 8px;
+
+/* Улучшаем отображение попапов */
+.map-popup {
+    min-width: 280px;
+    max-width: 350px;
+}
+
+.map-popup h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1f2937;
+    font-size: 1.1rem;
+}
+
+.map-popup p {
+    margin: 0.25rem 0;
+    color: #6b7280;
     font-size: 0.9rem;
 }
 
-.demo-mode {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+.map-popup .sensor-data {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    border-left: 3px solid #3b82f6;
 }
 
-.real-mode {
-    background-color: #d1ecf1;
-    border: 1px solid #bee5eb;
-    color: #0c5460;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: space-between;
-}
-
-.switch-mode-btn {
-    padding: 0.5rem 1rem;
-    background: #17a2b8;
+.details-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 0.8rem;
-    margin-left: auto;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
 }
 
-.switch-mode-btn:hover {
-    background: #138496;
+.details-btn:hover {
+    background: #2563eb;
 }
 
-.error-actions {
+/* Легенда карты */
+.map-legend {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-size: 0.875rem;
+}
+
+.map-legend h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1f2937;
+}
+
+.legend-item {
     display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.legend-item .color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.color-box.excellent { background-color: #10b981; }
+.color-box.good { background-color: #3b82f6; }
+.color-box.fair { background-color: #f59e0b; }
+.color-box.poor { background-color: #ef4444; }
+.color-box.no-data { background-color: #9ca3af; }
+
+/* Стили для детального просмотра */
+.room-detail-view {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
     gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.back-btn {
+    padding: 0.5rem 1rem;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.back-btn:hover {
+    background: #4b5563;
+}
+
+.room-detail-content {
+    display: grid;
+    gap: 2rem;
+}
+
+.room-info, .sensor-data, .charts-section {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.room-info h3, .sensor-data h3, .charts-section h3 {
+    margin: 0 0 1rem 0;
+    color: #1f2937;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.charts-placeholder {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .view-navigation {
+        flex-direction: column;
+    }
+    
+    .map-view {
+        height: 50vh;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* Стили для фильтра этажей */
+.floor-filter {
+    margin-bottom: 1rem;
+}
+
+.floor-filter label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.floor-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.floor-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* Индикатор текущего этажа */
+.floor-indicator {
+    background: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 1rem;
+}
+.current-floor {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e5e7eb;
+    color: #374151;
+}
+
+/* Адаптивность для фильтров */
+@media (max-width: 768px) {
+    .filters {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        margin-bottom: 0;
+    }
+}
+
+/* Стили для графиков */
+.charts-section {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.charts-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
     margin-top: 1rem;
-    flex-wrap: wrap;
 }
 
-.demo-btn {
-    background: #6c757d;
+.chart-wrapper {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.demo-btn:hover {
-    background: #5a6268;
+.chart-wrapper h4 {
+    margin: 0 0 1rem 0;
+    color: #374151;
+    font-size: 1.1rem;
 }
 
-.no-data-indicator {
-    color: #6c757d;
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.loading-charts {
+    text-align: center;
+    padding: 3rem;
+    color: #3b82f6;
+    font-size: 1.1rem;
+}
+
+.no-charts-data {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+/* Адаптивность для графиков */
+@media (max-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}
+.no-chart-data {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6b7280;
     font-style: italic;
 }
