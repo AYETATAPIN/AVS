@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/avsdb
+    username: avs
+    password: avs_pass
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+jwt:
+  secret: "testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest"

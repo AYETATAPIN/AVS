@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: avs
+      POSTGRES_PASSWORD: avs_pass
+      POSTGRES_DB: avsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+
+volumes:
+  pgdata:
