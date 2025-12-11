@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "4ef6c652-f9b3-4592-ade4-e926e0028046",
+      "feature_type": "building",
+      "properties": {
+        "address_id": "761e03c2-c124-4b82-b40c-186010a013f0",
+        "alt_name": null,
+        "category": "unspecified",
+        "display_point": null,
+        "name": {"ru": "Учебный корпус №1", "en": "Classroom Building #1"},
+        "restriction": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "9cd276a6-4b3d-4379-913d-5f855d0a3344",
+      "feature_type": "building",
+      "properties": {
+        "address_id": "761e03c2-c124-4b82-b40c-186010a013f0",
+        "alt_name": null,
+        "category": "unspecified",
+        "display_point": null,
+        "name": {"ru": "Ректорат", "en": "University Administration"},
+        "restriction": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "09a98deb-3497-409c-84bc-3635b5cf16ba",
+      "feature_type": "building",
+      "properties": {
+        "address_id": "f8a31ae4-c187-46f2-86e6-517b72adfa6d",
+        "alt_name": null,
+        "category": "unspecified",
+        "display_point": null,
+        "name": {"ru": "Главный корпус", "en": "Main Building"},
+        "restriction": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "1fe1db6c-af9e-4b52-bf73-86764ce9eaa7",
+      "feature_type": "building",
+      "properties": {
+        "address_id": "914a2047-82f1-4076-991c-30a96d1fb60e",
+        "alt_name": null,
+        "category": "unspecified",
+        "display_point": null,
+        "name": {"ru": "Аудиторный корпус", "en": "Auditorium Building"},
+        "restriction": null
+      },
+      "geometry": null
+    },
+    {
+      "type": "Feature",
+      "id": "7b637a3b-f334-4c83-88ba-ba5cac959869",
+      "feature_type": "building",
+      "properties": {
+        "address_id": "914a2047-82f1-4076-991c-30a96d1fb60e",
+        "alt_name": null,
+        "category": "unspecified",
+        "display_point": null,
+        "restriction": null,
+        "name": {
+          "ru": "Учебно-лабораторный корпус",
+          "en": "Education and Laboratory Building"
+        }
+      },
+      "geometry": null
+    }
+  ]
+}
