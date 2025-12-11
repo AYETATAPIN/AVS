@@ -23,7 +23,92 @@ const app = createApp({
         const selectedRoom = ref(null);
         const roomHistory = ref([]);
         const historyLoading = ref(false);
+        
+        // Добавляем свойства для аутентификации
+        const isAdminAuthenticated = ref(false);
+        const showLoginModal = ref(false);
+        const loginForm = ref({
+            username: '',
+            password: ''
+        });
+        const loginError = ref('');
+        const loginLoading = ref(false);
+        const authMessage = ref('');
+        
+        // Проверяем аутентификацию при загрузке
+        const checkAuth = async () => {
+            const status = await apiService.checkAuthStatus();
+            isAdminAuthenticated.value = status.authenticated;
+            if (status.authenticated) {
+                authMessage.value = 'Вы вошли как администратор';
+            }
+        };
 
+        // Вход администратора
+        const loginAdmin = async () => {
+            try {
+                loginLoading.value = true;
+                loginError.value = '';
+                
+                if (!loginForm.value.username || !loginForm.value.password) {
+                    loginError.value = 'Заполните все поля';
+                    return;
+                }
+
+                // Явно передаем useDemoMode.value
+                const result = await apiService.loginAdmin(
+                    loginForm.value.username, 
+                    loginForm.value.password,
+                    useDemoMode.value
+                );
+
+                if (result.success) {
+                    isAdminAuthenticated.value = true;
+                    authMessage.value = result.message;
+                    showLoginModal.value = false;
+                    loginForm.value = { username: '', password: '' };
+                    
+                    // Показываем сообщение об успехе на 3 секунды
+                    setTimeout(() => {
+                        authMessage.value = 'Вы вошли как администратор';
+                    }, 3000);
+                } else {
+                    loginError.value = result.message;
+                }
+            } catch (err) {
+                console.error('Ошибка входа:', err);
+                loginError.value = 'Произошла ошибка при входе';
+            } finally {
+                loginLoading.value = false;
+            }
+        };
+
+        // Выход администратора
+        const logoutAdmin = () => {
+            const result = apiService.logoutAdmin();
+            isAdminAuthenticated.value = false;
+            authMessage.value = result.message;
+            
+            // Скрываем сообщение через 3 секунды
+            setTimeout(() => {
+                authMessage.value = '';
+            }, 3000);
+        };
+
+        // Открытие модального окна входа
+        const openLoginModal = () => {
+            loginForm.value = { username: '', password: '' };
+            loginError.value = '';
+            showLoginModal.value = true;
+        };
+
+        // Закрытие модального окна
+        const closeLoginModal = () => {
+            showLoginModal.value = false;
+            loginForm.value = { username: '', password: '' };
+            loginError.value = '';
+        };
+        
         // Функция для показа деталей комнаты
         const showRoomDetails = (roomId) => {
             selectedRoom.value = classrooms.value.find(room => room.id === roomId);
@@ -152,12 +237,16 @@ const app = createApp({
         };
 
         // Объединяем данные IMDF с данными датчиков
-        const mergeSensorData = (classrooms, sensorData) => {
+        const mergeSensorData = (classrooms, sensorDataArray) => {
+            console.log('Данные с сервера (первые 10):', sensorDataArray.slice(0, 10));
+            console.log('Аудитории IMDF (первые 10):', classrooms.slice(0, 10));
+
             const buildingNameMapping = {
                 "учебный корпус 1": "учебный корпус №1",
                 "учебный корпус №1": "учебный корпус №1", 
                 "ректорат": "ректорат",
                 "главный корпус": "главный корпус",
+                "аудиторный корпус": "аудиторный корпус"
             };
 
             const normalizeName = (name) => {
@@ -170,22 +259,26 @@ const app = createApp({
                 return buildingNameMapping[normalized] || normalized;
             };
 
+            const normalizeRoomNumber = (roomNumber) => {
+                return roomNumber ? roomNumber.toString().toLowerCase().replace(/\s/g, '') : '';
+            };
+
             const sensorMap = {};
             
-            sensorData.data?.forEach(sensor => {
-                if (sensor.building_name && sensor.room_number) {
-                    const normalizedBuilding = normalizeName(sensor.building_name);
-                    const key = `${normalizedBuilding}|${sensor.room_number}`;
+            sensorDataArray.forEach(sensor => {
+                if (sensor.buildingName && sensor.roomNumber) {
+                    const normalizedBuilding = normalizeName(sensor.buildingName);
+                    const normalizedRoom = normalizeRoomNumber(sensor.roomNumber);
+                    const key = `${normalizedBuilding}|${normalizedRoom}`;
                     sensorMap[key] = sensor;
                 }
             });
 
-            const lastUpdateTime = sensorData.last_update ? new Date(sensorData.last_update) : new Date(sensorData.timestamp);
-
             return classrooms.map(room => {
                 if (room.buildingName && room.roomNumber) {
                     const normalizedBuilding = normalizeName(room.buildingName);
-                    const key = `${normalizedBuilding}|${room.roomNumber}`;
+                    const normalizedRoom = normalizeRoomNumber(room.roomNumber);
+                    const key = `${normalizedBuilding}|${normalizedRoom}`;
                     const sensor = sensorMap[key];
                     
                     if (sensor) {
@@ -195,9 +288,9 @@ const app = createApp({
                             temperature: sensor.temperature,
                             humidity: sensor.humidity,
                             airQuality: calculateAirQuality(sensor.co2),
-                            lastUpdate: lastUpdateTime,
+                            lastUpdate: new Date(sensor.ts),
                             hasRealData: true,
-                            sensorId: sensor.sensor_id
+                            sensorId: sensor.sensorId
                         };
                     }
                 }
@@ -227,12 +320,12 @@ const app = createApp({
                     updateAvailableFloors();
                 }
 
-                const sensorData = await apiService.getAllSensorsData();
-                classrooms.value = mergeSensorData(imdfData.value.classrooms, sensorData);
+                const sensorDataArray = await apiService.getAllSensorsData();
+                classrooms.value = mergeSensorData(imdfData.value.classrooms, sensorDataArray);
                 updateMapData();
                 buildings.value = imdfData.value.buildings;
                 useDemoMode.value = false;
-                lastUpdate.value = sensorData.last_update ? new Date(sensorData.last_update) : new Date(sensorData.timestamp);
+                lastUpdate.value = sensorDataArray.length > 0 ? new Date(sensorDataArray[0].ts) : new Date();
 
             } catch (err) {
                 console.error('Ошибка загрузки реальных данных:', err);
@@ -341,6 +434,7 @@ const app = createApp({
         };
         
         onMounted(() => {
+            checkAuth();
             loadData();
             
             setInterval(() => {
@@ -375,7 +469,17 @@ const app = createApp({
             showRoomDetails,
             initMap,
             roomHistory,
-            historyLoading
+            historyLoading,
+            isAdminAuthenticated,
+            showLoginModal,
+            loginForm,
+            loginError,
+            loginLoading,
+            authMessage,
+            loginAdmin,
+            logoutAdmin,
+            openLoginModal,
+            closeLoginModal
         };
     }
 });

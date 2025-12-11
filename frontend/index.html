@@ -13,7 +13,26 @@
     <div id="app">
         <header class="header">
             <h1><i class="fas fa-university"></i> Качество воздуха в НГУ</h1>
-            <div class="last-update">Текущее время: <span>{{ currentTime }}</span></div>
+            <div class="header-right">
+                <div class="last-update">Текущее время: <span>{{ currentTime }}</span></div>
+                
+                <!-- Блок аутентификации -->
+                <div class="auth-block">
+                    <div v-if="!isAdminAuthenticated" class="auth-status">
+                        <button @click="openLoginModal" class="auth-btn">
+                            <i class="fas fa-sign-in-alt"></i> Войти как админ
+                        </button>
+                    </div>
+                    <div v-else class="auth-status admin-authenticated">
+                        <span class="auth-message">
+                            <i class="fas fa-user-shield"></i> {{ authMessage || 'Вы вошли как администратор' }}
+                        </span>
+                        <button @click="logoutAdmin" class="auth-btn logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> Выйти
+                        </button>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="container">
@@ -155,20 +174,20 @@
                             </div>
                             
                             <div class="last-updated">
-                                <small>Обновлено: {{ formatTime(room.lastUpdate) }}</small>
+                                <small>Обновено: {{ formatTime(room.lastUpdate) }}</small>
                             </div>
                         </div>
                     </div>
                 </div>
             
-                <!-- Сообщение если нет аудиторий -->
-                <div v-else-if="!loading" class="no-data">
+                <!-- Сообщение если нет аудиторий 
+                <div v-else class="no-data">
                     <i class="fas fa-info-circle"></i>
                     <h3>Аудитории не найдены</h3>
                     <p>Не удалось загрузить данные о помещениях</p>
                     <button @click="enableDemoMode" class="demo-btn">Использовать демо-данные</button>
                 </div>
-
+                -->
                 <!-- Статистика по качеству воздуха -->
                 <div v-if="classrooms.length > 0" class="stats">
                     <div class="stat-card">
@@ -199,81 +218,154 @@
                         <div class="stat-label">Без данных</div>
                     </div>
                 </div>
-            <!-- Вид карты -->
-            <div v-if="currentView === 'map'" class="map-view">
-                <div id="campus-map"></div>
+
+                <!-- Вид карты -->
+                <div v-if="currentView === 'map'" class="map-view">
+                    <div id="campus-map"></div>
+                </div>
+
+                <!-- Детальная информация об аудитории -->
+                <div v-if="currentView === 'details' && selectedRoom" class="room-detail-view">
+                    <div class="detail-header">
+                        <button @click="currentView = 'list'" class="back-btn">
+                            <i class="fas fa-arrow-left"></i> Назад к списку
+                        </button>
+                        <h2>{{ selectedRoom.name }}</h2>
+                    </div>
+                    
+                    <div class="room-detail-content">
+                        <div class="room-info">
+                            <h3>Информация об аудитории</h3>
+                            <p><i class="fas fa-building"></i> {{ selectedRoom.buildingName }}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> {{ selectedRoom.floor }} этаж</p>
+                            <p v-if="selectedRoom.addressText"><i class="fas fa-map-pin"></i> {{ selectedRoom.addressText }}</p>
+                        </div>
+                        
+                        <div class="sensor-data">
+                            <h3>Текущие данные с датчиков</h3>
+                            <div v-if="selectedRoom.co2 !== null || selectedRoom.temperature !== null || selectedRoom.humidity !== null" class="data-grid">
+                                <div class="data-item">
+                                    <span class="label">CO₂:</span>
+                                    <span class="value">{{ selectedRoom.co2 || '--' }} ppm</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Температура:</span>
+                                    <span class="value">{{ selectedRoom.temperature || '--' }}°C</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Влажность:</span>
+                                    <span class="value">{{ selectedRoom.humidity || '--' }}%</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Качество воздуха:</span>
+                                    <span class="value" :class="selectedRoom.airQuality">
+                                        {{ getQualityText(selectedRoom.airQuality) }}
+                                    </span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="label">Последнее обновление:</span>
+                                    <span class="value">{{ formatTime(selectedRoom.lastUpdate) }}</span>
+                                </div>
+                            </div>
+                            <div v-else class="no-data">
+                                <p><i class="fas fa-info-circle"></i> Данные с датчиков отсутствуют</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Графики -->
+                        <div class="charts-section">
+                            <h3>Исторические данные за последние 24 часа</h3>
+                            
+                            <div v-if="historyLoading" class="loading-charts">
+                                <i class="fas fa-spinner fa-spin"></i> Загрузка исторических данных...
+                            </div>
+                            
+                            <div v-else-if="roomHistory.length > 0" class="charts-container">
+                                <div class="chart-wrapper">
+                                    <h4>Изменение показателей во времени</h4>
+                                    <line-chart :data="roomHistory" :title="`${selectedRoom.name} - Исторические данные`" />
+                                </div>
+
+                                <div class="chart-wrapper">
+                                    <h4>Качество воздуха</h4>
+                                    <quality-chart :data="roomHistory" />
+                                </div>
+                            </div>
+                            <div v-else class="no-charts-data">
+                                <p><i class="fas fa-chart-line"></i> Исторические данные недоступны</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Детальная информация об аудитории -->
-            <div v-if="currentView === 'details' && selectedRoom" class="room-detail-view">
-                <div class="detail-header">
-                    <button @click="currentView = 'list'" class="back-btn">
-                        <i class="fas fa-arrow-left"></i> Назад к списку
-                    </button>
-                    <h2>{{ selectedRoom.name }}</h2>
-                </div>
-                
-                <div class="room-detail-content">
-                    <div class="room-info">
-                        <h3>Информация об аудитории</h3>
-                        <p><i class="fas fa-building"></i> {{ selectedRoom.buildingName }}</p>
-                        <p><i class="fas fa-map-marker-alt"></i> {{ selectedRoom.floor }} этаж</p>
-                        <p v-if="selectedRoom.addressText"><i class="fas fa-map-pin"></i> {{ selectedRoom.addressText }}</p>
+            <!-- Модальное окно входа -->
+            <div v-if="showLoginModal" class="modal-overlay" @click.self="closeLoginModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-user-shield"></i> Вход для администратора</h2>
+                        <button @click="closeLoginModal" class="modal-close-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     
-                    <div class="sensor-data">
-                        <h3>Текущие данные с датчиков</h3>
-                        <div v-if="selectedRoom.co2 !== null || selectedRoom.temperature !== null || selectedRoom.humidity !== null" class="data-grid">
-                            <div class="data-item">
-                                <span class="label">CO₂:</span>
-                                <span class="value">{{ selectedRoom.co2 || '--' }} ppm</span>
+                    <div class="modal-body">
+                        <form @submit.prevent="loginAdmin" class="login-form">
+                            <div class="form-group">
+                                <label for="username">
+                                    <i class="fas fa-user"></i> Имя пользователя
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    v-model="loginForm.username" 
+                                    placeholder="Введите имя пользователя"
+                                    :disabled="loginLoading"
+                                    required
+                                >
                             </div>
-                            <div class="data-item">
-                                <span class="label">Температура:</span>
-                                <span class="value">{{ selectedRoom.temperature || '--' }}°C</span>
+                            
+                            <div class="form-group">
+                                <label for="password">
+                                    <i class="fas fa-lock"></i> Пароль
+                                </label>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    v-model="loginForm.password" 
+                                    placeholder="Введите пароль"
+                                    :disabled="loginLoading"
+                                    required
+                                >
                             </div>
-                            <div class="data-item">
-                                <span class="label">Влажность:</span>
-                                <span class="value">{{ selectedRoom.humidity || '--' }}%</span>
+                            
+                            <div v-if="loginError" class="error-message">
+                                <i class="fas fa-exclamation-circle"></i> {{ loginError }}
                             </div>
-                            <div class="data-item">
-                                <span class="label">Качество воздуха:</span>
-                                <span class="value" :class="selectedRoom.airQuality">
-                                    {{ getQualityText(selectedRoom.airQuality) }}
-                                </span>
+                            
+                            <div class="form-actions">
+                                <button 
+                                    type="button" 
+                                    @click="closeLoginModal" 
+                                    class="btn btn-secondary"
+                                    :disabled="loginLoading"
+                                >
+                                    Отмена
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    class="btn btn-primary"
+                                    :disabled="loginLoading"
+                                >
+                                    <span v-if="loginLoading">
+                                        <i class="fas fa-spinner fa-spin"></i> Вход...
+                                    </span>
+                                    <span v-else>
+                                        <i class="fas fa-sign-in-alt"></i> Войти
+                                    </span>
+                                </button>
                             </div>
-                            <div class="data-item">
-                                <span class="label">Последнее обновление:</span>
-                                <span class="value">{{ formatTime(selectedRoom.lastUpdate) }}</span>
-                            </div>
-                        </div>
-                        <div v-else class="no-data">
-                            <p><i class="fas fa-info-circle"></i> Данные с датчиков отсутствуют</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Графики -->
-                    <div class="charts-section">
-                        <h3>Исторические данные за последние 24 часа</h3>
-                        
-                        <div v-if="historyLoading" class="loading-charts">
-                            <i class="fas fa-spinner fa-spin"></i> Загрузка исторических данных...
-                        </div>
-                        
-                        <div v-else-if="roomHistory.length > 0" class="charts-container">
-                            <div class="chart-wrapper">
-                                <h4>Изменение показателей во времени</h4>
-                                <line-chart :data="roomHistory" :title="`${selectedRoom.name} - Исторические данные`" />
-                            </div>
-
-                            <div class="chart-wrapper">
-                                <h4>Качество воздуха</h4>
-                                <quality-chart :data="roomHistory" />
-                            </div>
-                        
-                        <div v-else class="no-charts-data">
-                            <p><i class="fas fa-chart-line"></i> Исторические данные недоступны</p>
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
