@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  # PostgreSQL не включаем - Там база Лехи нужна
+  # Redis можно добавить если нужно
+
+volumes:
+  mosquitto_data:
