@@ -40,10 +40,13 @@ func (h *Handler) handleSensorData(payload []byte) {
         return
     }
     
+    // Преобразуем английское название из MQTT в русское для БД
+    russianBuildingName := models.GetRussianBuildingName(mqttMsg.BuildingName)
+    
     // Преобразуем в модель БД
     sensorData := models.SensorData{
         SensorID:     mqttMsg.SensorID,
-        BuildingName: mqttMsg.BuildingName,
+        BuildingName: russianBuildingName, 
         RoomNumber:   mqttMsg.RoomNumber,
         TS:           mqttMsg.TS,
         CO2:          mqttMsg.CO2,
@@ -62,8 +65,10 @@ func (h *Handler) handleSensorData(payload []byte) {
         return
     }
     
-    log.Printf("Saved: %s (%s) - CO2: %dppm, Temp: %d°C, Humidity: %d%%", 
-        sensorData.SensorID, sensorData.RoomNumber,
+    log.Printf("MQTT: %s (english) -> DB: %s (russian)", 
+        mqttMsg.BuildingName, sensorData.BuildingName)
+    log.Printf("Saved: %s (%s, %s) - CO2: %dppm, Temp: %d°C, Humidity: %d%%", 
+        sensorData.SensorID, sensorData.BuildingName, sensorData.RoomNumber,
         sensorData.CO2, sensorData.Temperature, sensorData.Humidity)
 }
 

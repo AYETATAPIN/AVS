@@ -56,9 +56,9 @@ SELECT
   building_name,
   room_number,
   now() AS ts,
-  1 AS co2,
-  1 AS temperature,
-  1 AS humidity
+  0 AS co2,
+  0 AS temperature,
+  0 AS humidity
 FROM joined;
 
 CREATE TABLE IF NOT EXISTS admins (

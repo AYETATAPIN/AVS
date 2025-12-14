@@ -6,6 +6,7 @@ import (
     "ingest-go/models"
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
+    "gorm.io/gorm/schema" // Добавляем этот импорт
 )
 
 type PostgresDB struct {
@@ -13,7 +14,13 @@ type PostgresDB struct {
 }
 
 func NewPostgres(dsn string) (*PostgresDB, error) {
-    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+        // Правильная настройка именования таблиц
+        NamingStrategy: schema.NamingStrategy{
+            TablePrefix:   "",
+            SingularTable: false, // false = plural (sensors), true = singular (sensor)
+        },
+    })
     if err != nil {
         return nil, err
     }

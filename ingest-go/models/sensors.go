@@ -2,6 +2,23 @@ package models
 
 import "time"
 
+// BuildingMapping - соответствие английских названий русским
+var BuildingMapping = map[string]string{
+    "Auditory":               "Аудиторный корпус",
+    "Main":                   "Главный корпус",
+    "Educational_Laboratory": "Учебно-лабораторный корпус",
+    "Educational_1":          "Учебный корпус №1",
+    "Rectorate":              "Ректорат",
+}
+
+// GetRussianBuildingName - преобразует английское название в русское
+func GetRussianBuildingName(englishName string) string {
+    if russianName, ok := BuildingMapping[englishName]; ok {
+        return russianName
+    }
+    return englishName
+}
+
 // SensorData - соответствует таблице sensors в PostgreSQL
 type SensorData struct {
     ID           uint      `gorm:"primaryKey;column:id" json:"id"`
@@ -14,9 +31,9 @@ type SensorData struct {
     Humidity     int       `gorm:"column:humidity;not null;default:1" json:"humidity"`
 }
 
-// TableName - указывает имя таблицы в БД
+// TableName - ЯВНО указываем имя таблицы
 func (SensorData) TableName() string {
-    return "sensors"
+    return "sensors" // Явно указываем "sensors" вместо дефолтного "sensor_data"
 }
 
 // MQTTMessage - структура входящего MQTT сообщения
