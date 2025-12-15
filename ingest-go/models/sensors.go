@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+    "strings"
+    "time"
+)
 
 // BuildingMapping - соответствие английских названий русским
 var BuildingMapping = map[string]string{
@@ -11,12 +14,52 @@ var BuildingMapping = map[string]string{
     "Rectorate":              "Ректорат",
 }
 
+// LetterMapping - соответствие английских букв русским
+var LetterMapping = map[string]string{
+    "a": "а",  // английская a -> русская а
+    "b": "б",  // английская b -> русская б  
+    "k": "к",  // английская k -> русская к
+    "c": "с",  // на всякий случай
+    "e": "е",  // английская e -> русская е
+    "m": "м",  // английская m -> русская м
+    "o": "о",  // английская o -> русская о
+    "p": "р",  // английская p -> русская р
+    "t": "т",  // английская t -> русская т
+    "x": "х",  // английская x -> русская х
+    "y": "у",  // английская y -> русская у
+}
+
 // GetRussianBuildingName - преобразует английское название в русское
 func GetRussianBuildingName(englishName string) string {
     if russianName, ok := BuildingMapping[englishName]; ok {
         return russianName
     }
     return englishName
+}
+
+// ConvertRoomNumber - преобразует английские буквы в номере комнаты на русские
+func ConvertRoomNumber(roomNumber string) string {
+    if len(roomNumber) == 0 {
+        return roomNumber
+    }
+    
+    // Получаем последний символ
+    lastChar := roomNumber[len(roomNumber)-1:]
+    
+    // Проверяем, является ли последний символ английской буквой
+    if russianLetter, ok := LetterMapping[strings.ToLower(lastChar)]; ok {
+        // Заменяем последнюю букву на русскую
+        // Сохраняем регистр
+        if strings.ToUpper(lastChar) == lastChar {
+            // Если была заглавная английская, делаем заглавную русскую
+            return roomNumber[:len(roomNumber)-1] + strings.ToUpper(russianLetter)
+        } else {
+            // Если была строчная английская, делаем строчную русскую
+            return roomNumber[:len(roomNumber)-1] + russianLetter
+        }
+    }
+    
+    return roomNumber
 }
 
 // SensorData - соответствует таблице sensors в PostgreSQL
@@ -33,7 +76,7 @@ type SensorData struct {
 
 // TableName - ЯВНО указываем имя таблицы
 func (SensorData) TableName() string {
-    return "sensors" // Явно указываем "sensors" вместо дефолтного "sensor_data"
+    return "sensors"
 }
 
 // MQTTMessage - структура входящего MQTT сообщения

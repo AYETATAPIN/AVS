@@ -37,17 +37,21 @@ func (h *Handler) handleSensorData(payload []byte) {
     var mqttMsg models.MQTTMessage
     if err := json.Unmarshal(payload, &mqttMsg); err != nil {
         log.Printf("Error parsing sensor data JSON: %v", err)
+        log.Printf("Raw payload: %s", string(payload))
         return
     }
     
     // Преобразуем английское название из MQTT в русское для БД
     russianBuildingName := models.GetRussianBuildingName(mqttMsg.BuildingName)
     
+    // Преобразуем номер комнаты (английские буквы -> русские)
+    russianRoomNumber := models.ConvertRoomNumber(mqttMsg.RoomNumber)
+    
     // Преобразуем в модель БД
     sensorData := models.SensorData{
         SensorID:     mqttMsg.SensorID,
-        BuildingName: russianBuildingName, 
-        RoomNumber:   mqttMsg.RoomNumber,
+        BuildingName: russianBuildingName, // Сохраняем русское название
+        RoomNumber:   russianRoomNumber,   // Сохраняем номер с русской буквой
         TS:           mqttMsg.TS,
         CO2:          mqttMsg.CO2,
         Temperature:  mqttMsg.Temperature,
@@ -65,12 +69,14 @@ func (h *Handler) handleSensorData(payload []byte) {
         return
     }
     
-    log.Printf("MQTT: %s (english) -> DB: %s (russian)", 
-        mqttMsg.BuildingName, sensorData.BuildingName)
+    log.Printf("MQTT: %s/%s (english) -> DB: %s/%s (russian)", 
+        mqttMsg.BuildingName, mqttMsg.RoomNumber, 
+        sensorData.BuildingName, sensorData.RoomNumber)
     log.Printf("Saved: %s (%s, %s) - CO2: %dppm, Temp: %d°C, Humidity: %d%%", 
         sensorData.SensorID, sensorData.BuildingName, sensorData.RoomNumber,
         sensorData.CO2, sensorData.Temperature, sensorData.Humidity)
 }
+
 
 func (h *Handler) handleSensorStatus(payload []byte) {
     // Обработка статуса сенсора

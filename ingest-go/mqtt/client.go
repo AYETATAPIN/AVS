@@ -30,15 +30,15 @@ func NewClientOptions(broker, clientID string) *mqtt.ClientOptions {
     
     // Callback-и
     opts.OnConnect = func(c mqtt.Client) {
-        log.Println("✅ Connected to MQTT broker")
+        log.Println("Connected to MQTT broker")
     }
     
     opts.OnConnectionLost = func(c mqtt.Client, err error) {
-        log.Printf("⚠️  MQTT connection lost: %v", err)
+        log.Printf("MQTT connection lost: %v", err)
     }
     
     opts.OnReconnecting = func(c mqtt.Client, co *mqtt.ClientOptions) {
-        log.Println("🔄 Reconnecting to MQTT broker...")
+        log.Println("Reconnecting to MQTT broker...")
     }
     
     return opts

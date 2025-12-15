@@ -15,7 +15,7 @@ type PostgresDB struct {
 
 func NewPostgres(dsn string) (*PostgresDB, error) {
     db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-        // Правильная настройка именования таблиц
+        // Настройка именования таблиц
         NamingStrategy: schema.NamingStrategy{
             TablePrefix:   "",
             SingularTable: false, // false = plural (sensors), true = singular (sensor)

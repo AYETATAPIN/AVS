@@ -23,7 +23,7 @@ func main() {
     // Инициализируем хранилище
     db, err := storage.NewPostgres(cfg.PostgresURL)
     if err != nil {
-        log.Fatalf("❌ Failed to connect to PostgreSQL: %v", err)
+        log.Fatalf("Failed to connect to PostgreSQL: %v", err)
     }
     defer db.Close()
     
