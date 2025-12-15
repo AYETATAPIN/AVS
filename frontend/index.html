@@ -45,6 +45,7 @@
                     <i class="fas fa-map"></i> Карта кампуса
                 </button>
             </div>
+            
             <!-- Блок статуса данных -->
             <div class="data-status">
                 <div v-if="useDemoMode" class="demo-mode">
@@ -83,9 +84,10 @@
             <div v-if="!loading">
                 <!-- Фильтры -->
                 <div class="filters">
-                    <div class="filter-group">
+                    <!-- Фильтр корпуса (только для списка) -->
+                    <div v-if="currentView === 'list'" class="filter-group">
                         <label for="building-filter">Корпус:</label>
-                        <select id="building-filter" v-model="selectedBuilding">
+                        <select id="building-filter" v-model="selectedBuildingList">
                             <option value="all">Все корпуса</option>
                             <option v-for="building in buildings" :value="building.id" :key="building.id">
                                 {{ building.name?.ru || building.name || building.id }}
@@ -93,9 +95,22 @@
                         </select>
                     </div>
                     
-                    <div class="filter-group">
-                        <label for="quality-filter">Качество воздуха:</label>
-                        <select id="quality-filter" v-model="selectedQuality">
+                    <!-- Фильтр качества воздуха для списка -->
+                    <div v-if="currentView === 'list'" class="filter-group">
+                        <label for="quality-filter-list">Качество воздуха:</label>
+                        <select id="quality-filter-list" v-model="selectedQualityList">
+                            <option value="all">Все</option>
+                            <option value="excellent">Отличное</option>
+                            <option value="good">Хорошее</option>
+                            <option value="fair">Удовлетворительное</option>
+                            <option value="poor">Плохое</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Фильтр качества воздуха для карты -->
+                    <div v-if="currentView === 'map'" class="filter-group">
+                        <label for="quality-filter-map">Качество воздуха:</label>
+                        <select id="quality-filter-map" v-model="selectedQualityMap">
                             <option value="all">Все</option>
                             <option value="excellent">Отличное</option>
                             <option value="good">Хорошее</option>
@@ -104,19 +119,35 @@
                         </select>
                     </div>
 
+                    <!-- Кнопка обновления (общая для всех вью) -->
                     <div class="filter-group">
                         <button @click="refreshData" class="refresh-btn">
                             <i class="fas fa-sync-alt"></i> Обновить
                         </button>
                     </div>
-                    <div class="filter-group">
+                    
+                    <!-- Фильтр этажа (только для списка) -->
+                    <div v-if="currentView === 'list'" class="filter-group floor-filter-group">
                         <label for="floor-filter">Этаж:</label>
-                        <select id="floor-filter" v-model="selectedFloor">
+                        <select id="floor-filter" v-model="selectedFloorList">
                             <option value="all">Все этажи</option>
                             <option v-for="floor in availableFloors" :value="floor" :key="floor">
                                 {{ floor }} этаж
                             </option>
                         </select>
+                    </div>
+                    
+                    <!-- Поиск (только для списка) -->
+                    <div v-if="currentView === 'list'" class="filter-group search-filter">
+                        <label for="search-filter">Поиск аудитории:</label>
+                        <input 
+                            type="text" 
+                            id="search-filter" 
+                            v-model="searchQueryList" 
+                            placeholder="Номер или название"
+                            @input="handleSearch"
+                        >
+                        <i class="fas fa-search"></i>
                     </div>
                 </div>
 
@@ -142,54 +173,53 @@
 
                 <!-- Список аудиторий -->
                 <div v-if="currentView === 'list'" class="list-view">
-                    <div v-for="room in classrooms" :key="room.id" 
-                         class="classroom-card" 
-                         :class="room.airQuality">
-                        
-                        <div class="card-header">
-                            <h3>{{ room.name }}</h3>
-                            <span class="quality-badge">{{ getQualityText(room.airQuality) }}</span>
-                        </div>
-                        
-                        <div class="card-body">
-                            <div class="room-info">
-                                <p><i class="fas fa-building"></i> {{ room.buildingName }}</p>
-                                <p><i class="fas fa-map-marker-alt"></i> {{ room.floor }} этаж</p>
-                                <p v-if="room.addressText"><i class="fas fa-map-pin"></i> {{ room.addressText }}</p>
+                    <div v-if="filteredRooms.length > 0">
+                        <div v-for="room in filteredRooms" :key="room.id" 
+                             class="classroom-card" 
+                             :class="room.airQuality">
+                            
+                            <div class="card-header">
+                                <h3>{{ room.name }}</h3>
+                                <span class="quality-badge">{{ getQualityText(room.airQuality) }}</span>
                             </div>
                             
-                            <div class="sensor-data">
-                                <div class="data-item">
-                                    <span class="label">CO₂:</span>
-                                    <span class="value">{{ room.co2 || '--' }} ppm</span>
+                            <div class="card-body">
+                                <div class="room-info">
+                                    <p><i class="fas fa-building"></i> {{ room.buildingName }}</p>
+                                    <p><i class="fas fa-map-marker-alt"></i> {{ room.floor }} этаж</p>
+                                    <p v-if="room.addressText"><i class="fas fa-map-pin"></i> {{ room.addressText }}</p>
                                 </div>
-                                <div class="data-item">
-                                    <span class="label">Температура:</span>
-                                    <span class="value">{{ room.temperature || '--' }}°C</span>
+                                
+                                <div class="sensor-data">
+                                    <div class="data-item">
+                                        <span class="label">CO₂:</span>
+                                        <span class="value">{{ room.co2 || '--' }} ppm</span>
+                                    </div>
+                                    <div class="data-item">
+                                        <span class="label">Температура:</span>
+                                        <span class="value">{{ room.temperature || '--' }}°C</span>
+                                    </div>
+                                    <div class="data-item">
+                                        <span class="label">Влажность:</span>
+                                        <span class="value">{{ room.humidity || '--' }}%</span>
+                                    </div>
                                 </div>
-                                <div class="data-item">
-                                    <span class="label">Влажность:</span>
-                                    <span class="value">{{ room.humidity || '--' }}%</span>
+                                
+                                <div class="last-updated">
+                                    <small>Обновлено: {{ formatTime(room.lastUpdate) }}</small>
                                 </div>
-                            </div>
-                            
-                            <div class="last-updated">
-                                <small>Обновено: {{ formatTime(room.lastUpdate) }}</small>
                             </div>
                         </div>
                     </div>
+                    <div v-else class="no-data">
+                        <i class="fas fa-info-circle"></i>
+                        <h3>Аудитории не найдены</h3>
+                        <p>Попробуйте изменить параметры фильтрации</p>
+                    </div>
                 </div>
-            
-                <!-- Сообщение если нет аудиторий 
-                <div v-else class="no-data">
-                    <i class="fas fa-info-circle"></i>
-                    <h3>Аудитории не найдены</h3>
-                    <p>Не удалось загрузить данные о помещениях</p>
-                    <button @click="enableDemoMode" class="demo-btn">Использовать демо-данные</button>
-                </div>
-                -->
-                <!-- Статистика по качеству воздуха -->
-                <div v-if="classrooms.length > 0" class="stats">
+                
+                <!-- Статистика по качеству воздуха (только для списка) -->
+                <div v-if="classrooms.length > 0 && currentView === 'list'" class="stats">
                     <div class="stat-card">
                         <div class="stat-value">{{ stats.total }}</div>
                         <div class="stat-label">
@@ -219,11 +249,11 @@
                     </div>
                 </div>
 
-                <!-- Вид карты -->
-                <div v-if="currentView === 'map'" class="map-view">
+                <!-- Карта кампуса -->
+                <div v-if="currentView === 'map'" class="map-view view-map">
                     <div id="campus-map"></div>
                 </div>
-
+                
                 <!-- Детальная информация об аудитории -->
                 <div v-if="currentView === 'details' && selectedRoom" class="room-detail-view">
                     <div class="detail-header">
@@ -373,7 +403,7 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Наши JS файлы -->

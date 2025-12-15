@@ -21,13 +21,19 @@ class CampusMap {
                 attribution: false
             }).addTo(this.map);
             this.createCustomAttribution();
+            
+            // Сначала рендерим базовые элементы
             this.renderVenue();
             this.renderBuildings();
-            this.renderClassrooms();
             this.renderOpenings();
-
-            this.addLegend();
-
+            
+            // Затем создаем контрол этажей
+            this.createFloorControl();
+            
+            // И рендерим аудитории (будет показан этаж по умолчанию)
+            this.renderClassrooms();
+            this.updateLegend(this.currentFloor);
+            
             console.log('Карта успешно инициализирована');
             return this.map;
         } catch (error) {
@@ -35,6 +41,7 @@ class CampusMap {
             throw error;
         }
     }
+
     createCustomAttribution() {
         // Создаем свой контрол атрибуции
         const customAttribution = L.control.attribution();
@@ -73,8 +80,51 @@ class CampusMap {
 
     setFloor(floor) {
         this.currentFloor = floor;
-        this.updateClassrooms(this.filterClassroomsByFloor(this.allClassrooms, floor));
+        console.log(`Установлен этаж: ${floor}`);
+        
+        // Обновляем отображение аудиторий
+        const filteredClassrooms = this.filterClassroomsByFloor(this.allClassrooms, floor);
+        this.clearClassroomLayers();
+        
+        if (filteredClassrooms && filteredClassrooms.length > 0) {
+            filteredClassrooms.forEach(classroom => {
+                if (classroom.unit && classroom.unit.geometry) {
+                    const color = this.getRoomColor(classroom);
+                    
+                    const roomLayer = L.geoJSON(classroom.unit.geometry, {
+                        style: {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.7,
+                            weight: 2
+                        }
+                    }).addTo(this.map);
+
+                    this.roomLayers.set(classroom.id, roomLayer);
+                    roomLayer.bindPopup(() => this.createRoomPopup(classroom));
+                    
+                    roomLayer.on('mouseover', function() {
+                        this.setStyle({ weight: 4, fillOpacity: 0.9 });
+                    });
+                    roomLayer.on('mouseout', function() {
+                        this.setStyle({ weight: 2, fillOpacity: 0.7 });
+                    });
+                }
+            });
+        }
+        
+        // Обновляем выбранную кнопку
+        this.selectFloorButton(floor);
+        
+        // Обновляем легенду
+        this.updateLegend(floor);
+        
+        // Вызываем коллбэк, если есть
+        if (this.onFloorChange) {
+            this.onFloorChange(floor);
+        }
     }
+
 
     filterClassroomsByFloor(classrooms, floor) {
         if (floor === "all") {
@@ -202,7 +252,7 @@ class CampusMap {
         });
     }
 
-    // Создание попапа для аудитории - ВОТ ЗДЕСЬ ДОЛЖНА БЫТЬ КНОПКА
+    // Создание попапа для аудитории
     createRoomPopup(classroom) {
         const hasData = (classroom.hasRealData || classroom.co2 !== null) && classroom.co2 !== null;
         
@@ -248,6 +298,175 @@ class CampusMap {
             </div>
         `;
     }
+    createFloorIndicator() {
+        const indicator = L.DomUtil.create('div', 'map-floor-indicator');
+        indicator.innerHTML = `
+            <i class="fas fa-layer-group"></i>
+            <span class="floor-text">Все этажи</span>
+        `;
+        
+        this.map.getContainer().appendChild(indicator);
+        this.floorIndicator = indicator;
+        
+        return indicator;
+    }
+
+    createFloorControl() {
+        try {
+            console.log('Создание контрола этажей...');
+            
+            // Создаем контейнер для контрола этажей
+            const floorControl = L.DomUtil.create('div', 'floor-control');
+            floorControl.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 20px;
+                transform: translateY(-50%);
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+                min-width: 60px;
+                max-height: 400px;
+                overflow-y: auto;
+                padding: 5px 0;
+                border: 1px solid #e5e7eb;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            `;
+            
+            // Получаем уникальные этажи из аудиторий
+            const floors = new Set();
+            this.allClassrooms.forEach(classroom => {
+                if (classroom.floor) {
+                    floors.add(classroom.floor);
+                }
+            });
+            
+            // Сортируем этажи в правильном порядке (сверху вниз)
+            const sortedFloors = Array.from(floors).sort((a, b) => {
+                const order = { 
+                    'Цокольный': -1, 
+                    'Подвал': -1,
+                    '-1': -1,
+                    '0': 0,
+                    '1': 1, 
+                    '2': 2, 
+                    '3': 3, 
+                    '4': 4, 
+                    '5': 5,
+                    '6': 6,
+                    '7': 7,
+                    '8': 8,
+                    '9': 9,
+                    '10': 10
+                };
+                
+                const aOrder = order[a] !== undefined ? order[a] : parseInt(a);
+                const bOrder = order[b] !== undefined ? order[b] : parseInt(b);
+                
+                return bOrder - aOrder; // Сверху вниз: от верхних этажей к нижним
+            });
+            
+            // Убираем кнопку "Все" и добавляем только этажи
+            if (sortedFloors.length === 0) {
+                return floorControl;
+            }
+            
+            // Добавляем кнопки для каждого этажа
+            sortedFloors.forEach(floor => {
+                const button = this.createFloorButton(floor, floor);
+                floorControl.appendChild(button);
+            });
+            
+            // Добавляем контейнер на карту
+            this.map.getContainer().appendChild(floorControl);
+            this.floorControlElement = floorControl;
+            
+            // Выбираем первый этаж по умолчанию
+            const defaultFloor = sortedFloors[sortedFloors.length - 1]; // Берем самый нижний этаж (последний в отсортированном списке)
+            this.setFloor(defaultFloor);
+            this.selectFloorButton(defaultFloor);
+            
+            console.log('Контрол этажей создан');
+            return floorControl;
+            
+        } catch (error) {
+            console.error('Ошибка создания контрола этажей:', error);
+            return null;
+        }
+    }
+
+    // Метод для создания кнопки этажа
+    createFloorButton(label, floorId) {
+        const button = L.DomUtil.create('button', 'floor-button');
+        button.textContent = label;
+        button.dataset.floor = floorId;
+        
+        button.style.cssText = `
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            background: white;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 0;
+            outline: none;
+        `;
+        
+        // Убираем стандартные стили кнопки
+        button.style.WebkitAppearance = 'none';
+        button.style.MozAppearance = 'none';
+        
+        // События наведения
+        button.onmouseenter = () => {
+            if (!button.classList.contains('active')) {
+                button.style.background = '#f3f4f6';
+            }
+        };
+        
+        button.onmouseleave = () => {
+            if (!button.classList.contains('active')) {
+                button.style.background = 'white';
+            }
+        };
+        
+        // Событие клика
+        button.onclick = (e) => {
+            e.stopPropagation();
+            this.setFloor(floorId);
+            this.selectFloorButton(floorId);
+        };
+        
+        return button;
+    }
+
+    // Метод для выбора кнопки этажа
+    selectFloorButton(floorId) {
+        if (!this.floorControlElement) return;
+        
+        const buttons = this.floorControlElement.querySelectorAll('.floor-button');
+        buttons.forEach(button => {
+            button.classList.remove('active');
+            button.style.background = 'white';
+            button.style.color = '#374151';
+            button.style.fontWeight = '600';
+        });
+        
+        const activeButton = this.floorControlElement.querySelector(`[data-floor="${floorId}"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+            activeButton.style.background = '#3b82f6';
+            activeButton.style.color = 'white';
+            activeButton.style.fontWeight = '700';
+        }
+    }
 
     getRoomColor(classroom) {
         if (!classroom.airQuality) return '#9ca3af';
@@ -280,6 +499,47 @@ class CampusMap {
         const address = this.imdfData.addresses.find(a => a.id === addressId);
         return address ? `${address.address}, ${address.locality}` : 'Адрес не указан';
     }
+
+    updateLegend(floor) {
+        // Удаляем старую легенду, если есть
+        if (this.legendControl) {
+            this.map.removeControl(this.legendControl);
+        }
+        
+        // Создаем новую легенду
+        this.legendControl = L.control({ position: 'bottomright' });
+        
+        this.legendControl.onAdd = () => {
+            const div = L.DomUtil.create('div', 'map-legend');
+            div.innerHTML = `
+                <h4>Качество воздуха</h4>
+                <div class="legend-item">
+                    <div class="color-box excellent"></div>
+                    <span>Отличное</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box good"></div>
+                    <span>Хорошее</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box fair"></div>
+                    <span>Удовлетворительное</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box poor"></div>
+                    <span>Плохое</span>
+                </div>
+                <div class="legend-item">
+                    <div class="color-box no-data"></div>
+                    <span>Нет данных</span>
+                </div>
+            `;
+            return div;
+        };
+        
+        this.legendControl.addTo(this.map);
+    }
+
 
     addLegend() {
         const legend = L.control({ position: 'bottomright' });
@@ -323,7 +583,43 @@ class CampusMap {
     updateClassrooms(newClassrooms) {
         this.allClassrooms = newClassrooms;
         this.classrooms = newClassrooms;
-        this.renderClassrooms();
+        
+        // Если контрол этажей уже создан, обновляем его
+        if (this.floorControlElement) {
+            this.floorControlElement.remove();
+            this.createFloorControl();
+        }
+        
+        // Рендерим аудитории текущего этажа
+        const filteredClassrooms = this.filterClassroomsByFloor(this.classrooms, this.currentFloor);
+        this.clearClassroomLayers();
+        
+        if (filteredClassrooms && filteredClassrooms.length > 0) {
+            filteredClassrooms.forEach(classroom => {
+                if (classroom.unit && classroom.unit.geometry) {
+                    const color = this.getRoomColor(classroom);
+                    
+                    const roomLayer = L.geoJSON(classroom.unit.geometry, {
+                        style: {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.7,
+                            weight: 2
+                        }
+                    }).addTo(this.map);
+
+                    this.roomLayers.set(classroom.id, roomLayer);
+                    roomLayer.bindPopup(() => this.createRoomPopup(classroom));
+                    
+                    roomLayer.on('mouseover', function() {
+                        this.setStyle({ weight: 4, fillOpacity: 0.9 });
+                    });
+                    roomLayer.on('mouseout', function() {
+                        this.setStyle({ weight: 2, fillOpacity: 0.7 });
+                    });
+                }
+            });
+        }
     }
 
     focusOnRoom(roomId) {

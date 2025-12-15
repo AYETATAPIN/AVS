@@ -15,8 +15,15 @@ const app = createApp({
         const imdfData = ref(null);
         const selectedFloor = ref("all");
         const availableFloors = ref([]);
-        const selectedBuilding = ref("all");
-        const selectedQuality = ref("all");
+        
+        // Раздельные фильтры для списка и карты
+        const selectedBuildingList = ref("all");
+        const selectedQualityList = ref("all");
+        const selectedFloorList = ref("all");
+        const searchQueryList = ref('');
+        const selectedQualityMap = ref("all");
+        
+        const searchTimeout = ref(null);
         
         const apiService = new SensorAPIService();
         const currentView = ref('list');
@@ -24,7 +31,7 @@ const app = createApp({
         const roomHistory = ref([]);
         const historyLoading = ref(false);
         
-        // Добавляем свойства для аутентификации
+        // Свойства для аутентификации
         const isAdminAuthenticated = ref(false);
         const showLoginModal = ref(false);
         const loginForm = ref({
@@ -55,7 +62,6 @@ const app = createApp({
                     return;
                 }
 
-                // Явно передаем useDemoMode.value
                 const result = await apiService.loginAdmin(
                     loginForm.value.username, 
                     loginForm.value.password,
@@ -68,7 +74,6 @@ const app = createApp({
                     showLoginModal.value = false;
                     loginForm.value = { username: '', password: '' };
                     
-                    // Показываем сообщение об успехе на 3 секунды
                     setTimeout(() => {
                         authMessage.value = 'Вы вошли как администратор';
                     }, 3000);
@@ -89,7 +94,6 @@ const app = createApp({
             isAdminAuthenticated.value = false;
             authMessage.value = result.message;
             
-            // Скрываем сообщение через 3 секунды
             setTimeout(() => {
                 authMessage.value = '';
             }, 3000);
@@ -122,16 +126,8 @@ const app = createApp({
             try {
                 historyLoading.value = true;
                 const sensorId = selectedRoom.value.sensorId || selectedRoom.value.id;
-                console.log('Загрузка исторических данных для:', {
-                    room: selectedRoom.value.name,
-                    sensorId: sensorId,
-                    hasRealData: selectedRoom.value.hasRealData,
-                    useDemoMode: useDemoMode.value
-                });
                 
                 roomHistory.value = await apiService.getSensorHistory(sensorId, 24);
-                console.log('Исторические данные загружены:', roomHistory.value.length, 'записей');
-                console.log('Пример данных:', roomHistory.value.slice(0, 3));
                 
             } catch (err) {
                 console.error('Ошибка загрузки исторических данных:', err);
@@ -169,8 +165,14 @@ const app = createApp({
                         mapContainer.innerHTML = '';
                     }
                     
-                    campusMap = new CampusMap('campus-map', imdfData.value, classrooms.value);
+                    // Используем filteredRoomsForMap для карты
+                    campusMap = new CampusMap('campus-map', imdfData.value, filteredRoomsForMap.value);
                     campusMap.init();
+                    
+                    // Добавляем обработчик смены этажа
+                    campusMap.onFloorChange = (floor) => {
+                        console.log(`Этаж изменен на карте: ${floor}`);
+                    };
                     
                     window.showRoomDetails = showRoomDetails;
                     
@@ -197,14 +199,12 @@ const app = createApp({
                 const order = { 'Цокольный': -1, '1': 0, '2': 1, '3': 2, '4': 3, '5': 4 };
                 return (order[a] || parseInt(a)) - (order[b] || parseInt(b));
             });
-            
-            console.log('Доступные этажи:', availableFloors.value);
         };
 
         // Обновление данных на карте
         const updateMapData = () => {
             if (campusMap) {
-                campusMap.updateClassrooms(classrooms.value);
+                campusMap.updateClassrooms(filteredRoomsForMap.value);
             }
         };
 
@@ -230,7 +230,7 @@ const app = createApp({
                     humidity: Math.floor(30 + Math.random() * 50),
                     airQuality: calculateAirQuality(co2),
                     lastUpdate: new Date(),
-                    hasRealData: true, // В демо-режиме показываем, что данные есть
+                    hasRealData: true,
                     sensorId: `demo-${room.id}`
                 };
             });
@@ -238,7 +238,7 @@ const app = createApp({
 
         // Объединяем данные IMDF с данными датчиков
         const mergeSensorData = (classrooms, sensorDataArray) => {
-            console.log('Данные с сервера (первые 10):', sensorDataArray.slice(0, 10));
+            console.log('Данные с сервера (первые 10):', sensorDataArray?.slice(0, 10));
             console.log('Аудитории IMDF (первые 10):', classrooms.slice(0, 10));
 
             const buildingNameMapping = {
@@ -265,7 +265,7 @@ const app = createApp({
 
             const sensorMap = {};
             
-            sensorDataArray.forEach(sensor => {
+            sensorDataArray?.forEach(sensor => {
                 if (sensor.buildingName && sensor.roomNumber) {
                     const normalizedBuilding = normalizeName(sensor.buildingName);
                     const normalizedRoom = normalizeRoomNumber(sensor.roomNumber);
@@ -325,11 +325,13 @@ const app = createApp({
                 updateMapData();
                 buildings.value = imdfData.value.buildings;
                 useDemoMode.value = false;
-                lastUpdate.value = sensorDataArray.length > 0 ? new Date(sensorDataArray[0].ts) : new Date();
+                lastUpdate.value = sensorDataArray?.length > 0 ? new Date(sensorDataArray[0].ts) : new Date();
 
             } catch (err) {
                 console.error('Ошибка загрузки реальных данных:', err);
                 error.value = 'Не удалось подключиться к серверу датчиков';
+                // Автоматически переключаемся в демо-режим при ошибке
+                await enableDemoMode();
             } finally {
                 loading.value = false;
             }
@@ -361,9 +363,79 @@ const app = createApp({
             }
         };
 
-        watch(selectedFloor, (newFloor) => {
-            if (campusMap) {
-                campusMap.setFloor(newFloor);
+        // Функция для извлечения чисел из строки
+        const extractNumbers = (str) => {
+            if (!str) return '';
+            const match = str.toString().match(/\d+/);
+            return match ? match[0] : '';
+        };
+
+        // Обработка поиска
+        const handleSearch = () => {
+            if (searchTimeout.value) {
+                clearTimeout(searchTimeout.value);
+            }
+            
+            searchTimeout.value = setTimeout(() => {
+                // Триггерим обновление
+                console.log('Поиск обновлен:', searchQueryList.value);
+            }, 300);
+        };
+
+        // Фильтрация аудиторий для списка
+        const filteredRooms = computed(() => {
+            if (!classrooms.value) return [];
+            
+            let filtered = classrooms.value.filter(room => {
+                if (!useDemoMode.value && !room.hasRealData) {
+                    return false;
+                }
+
+                const buildingMatch = selectedBuildingList.value === "all" || room.building?.id === selectedBuildingList.value;
+                const qualityMatch = selectedQualityList.value === "all" || room.airQuality === selectedQualityList.value;
+                const floorMatch = selectedFloorList.value === "all" || room.floor === selectedFloorList.value;
+                
+                // Логика поиска
+                let searchMatch = true;
+                if (searchQueryList.value) {
+                    const searchNumber = extractNumbers(searchQueryList.value);
+                    const roomNumber = extractNumbers(room.name) || extractNumbers(room.roomNumber);
+                    
+                    if (searchNumber && roomNumber) {
+                        searchMatch = roomNumber.startsWith(searchNumber);
+                    } else if (searchQueryList.value.trim()) {
+                        const searchLower = searchQueryList.value.toLowerCase();
+                        const roomNameLower = room.name ? room.name.toLowerCase() : '';
+                        const roomNumberLower = room.roomNumber ? room.roomNumber.toString().toLowerCase() : '';
+                        searchMatch = roomNameLower.includes(searchLower) || 
+                                      roomNumberLower.includes(searchLower);
+                    }
+                }
+                
+                return buildingMatch && qualityMatch && floorMatch && searchMatch;
+            });
+            
+            return filtered;
+        });
+
+        // Фильтрация для карты (только по качеству)
+        const filteredRoomsForMap = computed(() => {
+            if (!classrooms.value) return [];
+            
+            return classrooms.value.filter(room => {
+                if (!useDemoMode.value && !room.hasRealData) {
+                    return false;
+                }
+                
+                // Только фильтр по качеству для карты
+                const qualityMatch = selectedQualityMap.value === "all" || room.airQuality === selectedQualityMap.value;
+                return qualityMatch;
+            });
+        });
+
+        watch(selectedQualityMap, () => {
+            if (campusMap && currentView.value === 'map') {
+                updateMapData();
             }
         });
 
@@ -373,23 +445,15 @@ const app = createApp({
             }
         });
 
-        // Основная загрузка данных
+        // Основная загрузка данных - сначала пытаемся загрузить реальные, если не получается - демо
         const loadData = async () => {
-            await loadRealData();
+            try {
+                await loadRealData();
+            } catch (err) {
+                console.log('Не удалось загрузить реальные данные, переключаемся в демо-режим');
+                await enableDemoMode();
+            }
         };
-
-        // Фильтрация аудиторий
-        const filteredRooms = computed(() => {
-            return classrooms.value.filter(room => {
-                if (!useDemoMode.value && !room.hasRealData) {
-                    return false;
-                }
-
-                const buildingMatch = selectedBuilding.value === "all" || room.building?.id === selectedBuilding.value;
-                const qualityMatch = selectedQuality.value === "all" || room.airQuality === selectedQuality.value;
-                return buildingMatch && qualityMatch;
-            });
-        });
 
         // Статистика по качеству воздуха
         const stats = computed(() => {
@@ -397,12 +461,20 @@ const app = createApp({
                 ? classrooms.value 
                 : classrooms.value.filter(room => room.hasRealData);
             
+            // Фильтруем еще раз по текущим фильтрам списка
+            let filtered = roomsToCount.filter(room => {
+                const buildingMatch = selectedBuildingList.value === "all" || room.building?.id === selectedBuildingList.value;
+                const qualityMatch = selectedQualityList.value === "all" || room.airQuality === selectedQualityList.value;
+                const floorMatch = selectedFloorList.value === "all" || room.floor === selectedFloorList.value;
+                return buildingMatch && qualityMatch && floorMatch;
+            });
+            
             return {
-                total: roomsToCount.length,
-                excellent: roomsToCount.filter(r => r.airQuality === "excellent").length,
-                good: roomsToCount.filter(r => r.airQuality === "good").length,
-                fair: roomsToCount.filter(r => r.airQuality === "fair").length,
-                poor: roomsToCount.filter(r => r.airQuality === "poor").length,
+                total: filtered.length,
+                excellent: filtered.filter(r => r.airQuality === "excellent").length,
+                good: filtered.filter(r => r.airQuality === "good").length,
+                fair: filtered.filter(r => r.airQuality === "fair").length,
+                poor: filtered.filter(r => r.airQuality === "poor").length,
                 noData: useDemoMode.value ? 0 : classrooms.value.filter(r => !r.hasRealData).length
             };
         });
@@ -428,6 +500,7 @@ const app = createApp({
             if (useDemoMode.value) {
                 classrooms.value = generateDemoData(imdfData.value.classrooms);
                 lastUpdate.value = new Date();
+                updateMapData();
             } else {
                 await loadRealData();
             }
@@ -441,18 +514,23 @@ const app = createApp({
                 currentTime.value = new Date().toLocaleTimeString('ru-RU');
             }, 1000);
 
+            // Автообновление только для демо-режима
             setInterval(() => {
-                if (!loading.value) refreshData();
+                if (!loading.value && useDemoMode.value) {
+                    refreshData();
+                }
             }, 30000);
         });
 
         return {
             currentTime,
-            classrooms: filteredRooms,
+            classrooms,
             buildings,
-            selectedBuilding,
-            selectedQuality,
-            selectedFloor,
+            selectedBuildingList,
+            selectedQualityList,
+            selectedFloorList,
+            searchQueryList,
+            selectedQualityMap,
             availableFloors,
             stats,
             loading,
@@ -479,7 +557,9 @@ const app = createApp({
             loginAdmin,
             logoutAdmin,
             openLoginModal,
-            closeLoginModal
+            closeLoginModal,
+            handleSearch,
+            filteredRooms
         };
     }
 });
