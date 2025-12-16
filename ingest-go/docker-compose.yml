@@ -1,9 +1,0 @@
-version: '3.8'
-
-services:
-  mqtt:
-    image: eclipse-mosquitto:1.6.15  # Старая но надежная версия
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    restart: unless-stopped
