@@ -197,14 +197,84 @@ class SensorAPIService {
         }
     }
 
+
     async getSensorHistory(sensorId, hours = 24) {
         try {
-            return this.generateDemoHistoryData(hours);
+            // Демо-режим — генерируем тестовые данные
+            if (this.useDemoMode) {
+                console.log(`Демо-режим: генерация исторических данных для датчика ${sensorId}`);
+                return this.generateDemoHistoryData(hours);
+            }
+
+            // Реальный запрос к Java API
+            const url = `${this.baseUrl}/sensors/${sensorId}/history?hours=${hours}`;
+            console.log(`Запрос исторических данных: ${url}`);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    // Если требуется авторизация, добавляем токен
+                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // Проверяем, что ответ — массив
+            if (!Array.isArray(data)) {
+                console.warn('Ответ сервера не является массивом, возвращаем пустой массив');
+                return [];
+            }
+
+            // Опционально: можно провести валидацию полей или преобразование,
+            // но предполагаем, что сервер возвращает данные в нужном формате
+            return data;
+
         } catch (error) {
             console.error('Ошибка загрузки исторических данных:', error);
-            return this.generateDemoHistoryData(hours);
+            // В реальном режиме при ошибке возвращаем пустой массив,
+            // чтобы не подмешивать демо-данные
+            return [];
         }
     }
+
+
+    async sendDeviceCommand(deviceId, command, parameters = {}) {
+        try {
+            if (this.useDemoMode) {
+                console.log(`[DEMO] Команда ${command} устройству ${deviceId}`);
+                return {
+                    success: true,
+                    command_id: 'demo-' + Date.now(),
+                    status: 'success',
+                    data: { message: `Команда ${command} выполнена (демо)` }
+                };
+            }
+
+            const url = `${this.baseUrl}/devices/${deviceId}/command`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
+                },
+                body: JSON.stringify({ command, parameters })
+            });
+
+            if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка отправки команды:', error);
+            return { success: false, status: 'failed', data: { error: error.message } };
+        }
+    }
+
 
     generateDemoHistoryData(hours = 24) {
         const data = [];

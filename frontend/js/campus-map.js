@@ -255,7 +255,8 @@ class CampusMap {
     // Создание попапа для аудитории
     createRoomPopup(classroom) {
         const hasData = (classroom.hasRealData || classroom.co2 !== null) && classroom.co2 !== null;
-        
+        const isAdmin = window.isAdminAuthenticated; // читаем глобальную переменную
+
         return `
             <div class="map-popup">
                 <h3>${classroom.name}</h3>
@@ -274,14 +275,22 @@ class CampusMap {
                     <p><em>Данные с датчика отсутствуют</em></p>
                 `}
                 
-                <!-- КНОПКА ДЛЯ ПЕРЕХОДА К ГРАФИКАМ -->
+                <!-- Кнопка перехода к графикам -->
                 <button onclick="window.showRoomDetails('${classroom.id}')" 
                         class="details-btn">
-                    📊 Подробная информация
+                        Подробная информация
                 </button>
                 
                 ${classroom.sensorId ? `
                     <p><small>Датчик: ${classroom.sensorId}</small></p>
+                ` : ''}
+                
+                <!-- Кнопка управления (только для админа) -->
+                ${isAdmin ? `
+                    <button onclick="window.openDeviceControlFromMap('${classroom.id}')" 
+                            class="device-control-btn">
+                            Управление устройством
+                    </button>
                 ` : ''}
             </div>
         `;

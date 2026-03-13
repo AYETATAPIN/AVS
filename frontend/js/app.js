@@ -33,6 +33,13 @@ const app = createApp({
         
         // Свойства для аутентификации
         const isAdminAuthenticated = ref(false);
+        // Инициализация глобальной переменной для доступа из карты
+        window.isAdminAuthenticated = isAdminAuthenticated.value;
+
+        // Следим за изменениями и обновляем глобальную переменную
+        watch(isAdminAuthenticated, (newVal) => {
+            window.isAdminAuthenticated = newVal;
+        });
         const showLoginModal = ref(false);
         const loginForm = ref({
             username: '',
@@ -42,6 +49,11 @@ const app = createApp({
         const loginLoading = ref(false);
         const authMessage = ref('');
         
+        const showDeviceControlModal = ref(false);
+        const currentDeviceId = ref(null);
+        const commandResult = ref(null);
+        const commandLoading = ref(false);
+
         // Проверяем аутентификацию при загрузке
         const checkAuth = async () => {
             const status = await apiService.checkAuthStatus();
@@ -51,6 +63,11 @@ const app = createApp({
             }
         };
 
+        const confirmPowerOff = () => {
+            if (confirm('Устройство будет переведено в режим пониженного энергопотребления. Продолжить?')) {
+                sendDeviceCommand('power_off');
+            }
+        };
         // Вход администратора
         const loginAdmin = async () => {
             try {
@@ -136,7 +153,46 @@ const app = createApp({
                 historyLoading.value = false;
             }
         };
+        // Метод открытия модального окна управления
+        const openDeviceControl = (room) => {
+            if (!isAdminAuthenticated.value) return;
+            currentDeviceId.value = room.sensorId || room.id;
+            selectedRoom.value = room;
+            showDeviceControlModal.value = true;
+            commandResult.value = null;
+        };
 
+        // Метод отправки команды
+        const sendDeviceCommand = async (command, parameters = {}) => {
+            if (!currentDeviceId.value) return;
+            commandLoading.value = true;
+            commandResult.value = null;
+            try {
+                const result = await apiService.sendDeviceCommand(currentDeviceId.value, command, parameters);
+                commandResult.value = result;
+            } catch (err) {
+                commandResult.value = { status: 'failed', data: { error: err.message } };
+            } finally {
+                commandLoading.value = false;
+            }
+        };
+
+        // Закрытие модального окна
+        const closeDeviceControl = () => {
+            showDeviceControlModal.value = false;
+            currentDeviceId.value = null;
+            commandResult.value = null;
+        };
+
+        // Глобальная функция для вызова из карты
+        window.openDeviceControlFromMap = (roomId) => {
+            const room = classrooms.value.find(r => r.id === roomId);
+            if (room && isAdminAuthenticated.value) {
+                openDeviceControl(room);
+            } else {
+                alert('Только для администратора');
+            }
+        };
         // Функция инициализации карты
         const initMap = () => {
             if (!imdfData.value) {
@@ -311,7 +367,6 @@ const app = createApp({
         // Загрузка реальных данных
         const loadRealData = async () => {
             try {
-                console.log('Загрузка реальных данных...');
                 loading.value = true;
                 error.value = null;
 
@@ -320,18 +375,18 @@ const app = createApp({
                     updateAvailableFloors();
                 }
 
+                // Переключаем сервис в реальный режим
+                apiService.useDemoMode = false;
+
                 const sensorDataArray = await apiService.getAllSensorsData();
                 classrooms.value = mergeSensorData(imdfData.value.classrooms, sensorDataArray);
                 updateMapData();
                 buildings.value = imdfData.value.buildings;
                 useDemoMode.value = false;
                 lastUpdate.value = sensorDataArray?.length > 0 ? new Date(sensorDataArray[0].ts) : new Date();
-
             } catch (err) {
-                console.error('Ошибка загрузки реальных данных:', err);
                 error.value = 'Не удалось подключиться к серверу датчиков';
-                // Автоматически переключаемся в демо-режим при ошибке
-                await enableDemoMode();
+                await enableDemoMode(); // здесь apiService.useDemoMode уже установится в true внутри enableDemoMode
             } finally {
                 loading.value = false;
             }
@@ -340,23 +395,23 @@ const app = createApp({
         // Включение демо-режима
         const enableDemoMode = async () => {
             try {
-                console.log('Включение демо-режима...');
                 loading.value = true;
                 error.value = null;
 
                 if (!imdfData.value) {
                     imdfData.value = await initializeIMDFData();
-                    updateAvailableFloors(); 
+                    updateAvailableFloors();
                 }
+
+                // Переключаем сервис в демо-режим
+                apiService.useDemoMode = true;
 
                 classrooms.value = generateDemoData(imdfData.value.classrooms);
                 updateMapData();
                 buildings.value = imdfData.value.buildings;
                 useDemoMode.value = true;
                 lastUpdate.value = new Date();
-
             } catch (err) {
-                console.error('Ошибка включения демо-режима:', err);
                 error.value = 'Ошибка загрузки демо-данных: ' + err.message;
             } finally {
                 loading.value = false;
@@ -559,7 +614,15 @@ const app = createApp({
             openLoginModal,
             closeLoginModal,
             handleSearch,
-            filteredRooms
+            filteredRooms,
+            showDeviceControlModal,
+            currentDeviceId,
+            commandResult,
+            commandLoading,
+            openDeviceControl,
+            closeDeviceControl,
+            sendDeviceCommand,
+            confirmPowerOff,
         };
     }
 });

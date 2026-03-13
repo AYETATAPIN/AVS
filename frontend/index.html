@@ -208,6 +208,11 @@
                                 <div class="last-updated">
                                     <small>Обновлено: {{ formatTime(room.lastUpdate) }}</small>
                                 </div>
+                                <div v-if="isAdminAuthenticated" class="admin-actions">
+                                    <button @click="openDeviceControl(room)" class="device-control-btn">
+                                        <i class="fas fa-microchip"></i> Управление
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -396,6 +401,73 @@
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Модальное окно управления устройством -->
+            <div v-if="showDeviceControlModal" class="modal-overlay" @click.self="closeDeviceControl">
+                <div class="modal-content device-control-modal">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-microchip"></i> Управление устройством</h2>
+                        <button @click="closeDeviceControl" class="modal-close-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div v-if="selectedRoom" class="device-info">
+                            <p><strong>Аудитория:</strong> {{ selectedRoom.name }}</p>
+                            <p><strong>Device ID:</strong> {{ currentDeviceId }}</p>
+                        </div>
+
+                        <div class="commands-grid">
+                            <button @click="sendDeviceCommand('reboot', { delay: 5 })" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-power-off"></i> Перезагрузка
+                            </button>
+                            <button @click="sendDeviceCommand('get_sensors')" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-temperature-high"></i> Получить данные
+                            </button>
+                            <button @click="sendDeviceCommand('get_battery')" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-battery-three-quarters"></i> Статус батареи
+                            </button>
+                            <button @click="sendDeviceCommand('get_version')" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-code-branch"></i> Версия прошивки
+                            </button>
+                            <button @click="sendDeviceCommand('get_orientation')" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-arrows-alt"></i> Ориентация
+                            </button>
+                            <button @click="sendDeviceCommand('enable_fall_detection', { enable: true })" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-exclamation-triangle"></i> Вкл. детекцию падения
+                            </button>
+                            <button @click="sendDeviceCommand('enable_fall_detection', { enable: false })" 
+                                    :disabled="commandLoading" class="command-btn">
+                                <i class="fas fa-exclamation-triangle"></i> Выкл. детекцию падения
+                            </button>
+                            <button @click="sendDeviceCommand('power_on')" 
+                                    :disabled="commandLoading" class="command-btn power-on">
+                                <i class="fas fa-play"></i> Включить
+                            </button>
+                            <button @click="confirmPowerOff()" 
+                                    :disabled="commandLoading" class="command-btn power-off">
+                                <i class="fas fa-stop"></i> Выключить
+                            </button>
+                            <!-- Для команд с параметрами можно добавить поля ввода -->
+                        </div>
+
+                        <!-- Результат команды -->
+                        <div v-if="commandResult" class="command-result" :class="commandResult.status">
+                            <h4>Результат:</h4>
+                            <pre>{{ JSON.stringify(commandResult, null, 2) }}</pre>
+                        </div>
+
+                        <div v-if="commandLoading" class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i> Выполнение команды...
+                        </div>
                     </div>
                 </div>
             </div>
