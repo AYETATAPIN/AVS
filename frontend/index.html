@@ -432,6 +432,12 @@
                                     :disabled="commandLoading" class="command-btn">
                                 <i class="fas fa-battery-three-quarters"></i> Статус батареи
                             </button>
+                            <button @click="sendOTAUpdate" :disabled="commandLoading" class="command-btn ota-update">
+                                <i class="fas fa-cloud-upload-alt"></i> OTA Update
+                            </button>
+                            <button @click="sendDeviceCommand('ota_rollback')" :disabled="commandLoading" class="command-btn ota-rollback">
+                                <i class="fas fa-undo-alt"></i> OTA Rollback
+                            </button>
                             <button @click="sendDeviceCommand('get_version')" 
                                     :disabled="commandLoading" class="command-btn">
                                 <i class="fas fa-code-branch"></i> Версия прошивки
