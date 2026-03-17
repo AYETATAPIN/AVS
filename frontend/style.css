@@ -1470,3 +1470,15 @@ body {
 .command-btn.power-off:hover {
     background: #dc2626;
 }
+.command-btn.ota-update {
+    background: #8b5cf6;
+}
+.command-btn.ota-update:hover {
+    background: #7c3aed;
+}
+.command-btn.ota-rollback {
+    background: #f97316;
+}
+.command-btn.ota-rollback:hover {
+    background: #ea580c;
+}

@@ -186,6 +186,13 @@ const app = createApp({
             }
         };
 
+        const sendOTAUpdate = () => {
+            const url = prompt('Введите URL прошивки для OTA-обновления:');
+            if (url && url.trim() !== '') {
+                sendDeviceCommand('ota_update', { url: url.trim() });
+            }
+        };
+
         // Закрытие модального окна
         const closeDeviceControl = () => {
             showDeviceControlModal.value = false;
@@ -623,6 +630,7 @@ const app = createApp({
             closeDeviceControl,
             sendDeviceCommand,
             confirmPowerOff,
+            sendOTAUpdate,
         };
     }
 });
