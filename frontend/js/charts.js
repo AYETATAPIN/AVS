@@ -1,28 +1,24 @@
 // charts.js
+
 const ChartComponents = {
     LineChart: {
         name: 'LineChart',
         template: `
             <div class="chart-container">
-                <canvas ref="chartCanvas" v-if="hasData"></canvas>
-                <div v-else class="no-chart-data">
+                <canvas ref="chartCanvas" v-show="hasData"></canvas>
+                <div v-show="!hasData" class="no-chart-data">
                     <p>Нет данных для отображения графика</p>
                 </div>
             </div>
         `,
         props: {
-            data: {
-                type: Array,
-                required: true
-            },
-            title: {
-                type: String,
-                default: 'Исторические данные'
-            }
+            data: { type: Array, required: true },
+            title: { type: String, default: 'Исторические данные' }
         },
         data() {
             return {
-                chart: null
+                chart: null,
+                isMounted: false
             };
         },
         computed: {
@@ -31,13 +27,24 @@ const ChartComponents = {
             }
         },
         mounted() {
+            this.isMounted = true;
             if (this.hasData) {
-                this.renderChart();
+                this.$nextTick(this.renderChart);
+            }
+        },
+        beforeUnmount() {
+            if (this.chart) {
+                this.chart.destroy();
+                this.chart = null;
             }
         },
         watch: {
             data: {
-                handler: 'renderChart',
+                handler() {
+                    if (this.isMounted) {
+                        this.$nextTick(this.renderChart);
+                    }
+                },
                 deep: true
             }
         },
@@ -48,23 +55,26 @@ const ChartComponents = {
                     this.chart = null;
                 }
 
-                if (!this.hasData) {
-                    console.warn('Нет данных для построения графика');
+                if (!this.hasData) return;
+
+                const canvas = this.$refs.chartCanvas;
+                if (!canvas) {
+                    console.warn('Canvas ref not found');
                     return;
                 }
 
-                const ctx = this.$refs.chartCanvas.getContext('2d');
+                const ctx = canvas.getContext('2d');
                 if (!ctx) {
                     console.error('Не удалось получить контекст canvas');
                     return;
                 }
-                
+
                 // Подготовка данных
                 const labels = this.data.map(item => {
-                    const date = new Date(item.timestamp);
-                    return date.toLocaleTimeString('ru-RU', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                    const date = new Date(item.ts);
+                    return date.toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit'
                     });
                 });
 
@@ -110,76 +120,44 @@ const ChartComponents = {
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
+                            interaction: { mode: 'index', intersect: false },
                             scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: 'Время'
-                                    }
-                                },
+                                x: { title: { display: true, text: 'Время' } },
                                 y: {
                                     type: 'linear',
                                     display: true,
                                     position: 'left',
-                                    title: {
-                                        display: true,
-                                        text: 'CO₂ (ppm)'
-                                    },
-                                    grid: {
-                                        drawOnChartArea: false
-                                    }
+                                    title: { display: true, text: 'CO₂ (ppm)' },
+                                    grid: { drawOnChartArea: false }
                                 },
                                 y1: {
                                     type: 'linear',
                                     display: true,
                                     position: 'right',
-                                    title: {
-                                        display: true,
-                                        text: 'Температура (°C)'
-                                    },
-                                    grid: {
-                                        drawOnChartArea: false
-                                    }
+                                    title: { display: true, text: 'Температура (°C)' },
+                                    grid: { drawOnChartArea: false }
                                 },
                                 y2: {
                                     type: 'linear',
                                     display: true,
                                     position: 'right',
-                                    title: {
-                                        display: true,
-                                        text: 'Влажность (%)'
-                                    },
+                                    title: { display: true, text: 'Влажность (%)' },
                                     offset: true,
-                                    grid: {
-                                        drawOnChartArea: false
-                                    }
+                                    grid: { drawOnChartArea: false }
                                 }
                             },
                             plugins: {
-                                title: {
-                                    display: true,
-                                    text: this.title
-                                },
+                                title: { display: true, text: this.title },
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
                                             let label = context.dataset.label || '';
-                                            if (label) {
-                                                label += ': ';
-                                            }
+                                            if (label) label += ': ';
                                             if (context.parsed.y !== null) {
                                                 label += context.parsed.y;
-                                                if (context.dataset.label.includes('CO₂')) {
-                                                    label += ' ppm';
-                                                } else if (context.dataset.label.includes('Температура')) {
-                                                    label += '°C';
-                                                } else if (context.dataset.label.includes('Влажность')) {
-                                                    label += '%';
-                                                }
+                                                if (context.dataset.label.includes('CO₂')) label += ' ppm';
+                                                else if (context.dataset.label.includes('Температура')) label += '°C';
+                                                else if (context.dataset.label.includes('Влажность')) label += '%';
                                             }
                                             return label;
                                         }
@@ -188,16 +166,10 @@ const ChartComponents = {
                             }
                         }
                     });
-                    
                     console.log('График успешно создан');
                 } catch (error) {
                     console.error('Ошибка создания графика:', error);
                 }
-            }
-        },
-        beforeUnmount() {
-            if (this.chart) {
-                this.chart.destroy();
             }
         }
     },
@@ -206,21 +178,19 @@ const ChartComponents = {
         name: 'QualityChart',
         template: `
             <div class="chart-container">
-                <canvas ref="chartCanvas" v-if="hasData"></canvas>
-                <div v-else class="no-chart-data">
+                <canvas ref="chartCanvas" v-show="hasData"></canvas>
+                <div v-show="!hasData" class="no-chart-data">
                     <p>Нет данных для отображения графика</p>
                 </div>
             </div>
         `,
         props: {
-            data: {
-                type: Array,
-                required: true
-            }
+            data: { type: Array, required: true }
         },
         data() {
             return {
                 chart: null,
+                isMounted: false,
                 qualityColors: {
                     excellent: '#10b981',
                     good: '#3b82f6',
@@ -235,13 +205,24 @@ const ChartComponents = {
             }
         },
         mounted() {
+            this.isMounted = true;
             if (this.hasData) {
-                this.renderChart();
+                this.$nextTick(this.renderChart);
+            }
+        },
+        beforeUnmount() {
+            if (this.chart) {
+                this.chart.destroy();
+                this.chart = null;
             }
         },
         watch: {
             data: {
-                handler: 'renderChart',
+                handler() {
+                    if (this.isMounted) {
+                        this.$nextTick(this.renderChart);
+                    }
+                },
                 deep: true
             }
         },
@@ -252,14 +233,14 @@ const ChartComponents = {
                     this.chart = null;
                 }
 
-                if (!this.hasData) {
-                    console.warn('Нет данных для построения графика качества');
-                    return;
-                }
+                if (!this.hasData) return;
 
-                const ctx = this.$refs.chartCanvas.getContext('2d');
-                if (!ctx) {
-                    console.error('Не удалось получить контекст canvas');
+                const canvas = this.$refs.chartCanvas;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx || canvas.width === 0 || canvas.height === 0) {
+                    console.warn('Canvas not ready, retrying...');
+                    setTimeout(() => this.renderChart(), 100);
                     return;
                 }
                 
@@ -300,13 +281,8 @@ const ChartComponents = {
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: {
-                                    position: 'bottom'
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Распределение качества воздуха'
-                                },
+                                legend: { position: 'bottom' },
+                                title: { display: true, text: 'Распределение качества воздуха' },
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
@@ -321,16 +297,10 @@ const ChartComponents = {
                             }
                         }
                     });
-                    
                     console.log('График качества успешно создан');
                 } catch (error) {
                     console.error('Ошибка создания графика качества:', error);
                 }
-            }
-        },
-        beforeUnmount() {
-            if (this.chart) {
-                this.chart.destroy();
             }
         }
     }

@@ -207,7 +207,9 @@ class SensorAPIService {
             }
 
             // Реальный запрос к Java API
-            const url = `${this.baseUrl}/sensors/${sensorId}/history?hours=${hours}`;
+            const to = new Date().toISOString();
+            const from = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+            const url = `${this.baseUrl}/sensors/${sensorId}/history?from=${from}&to=${to}`;
             console.log(`Запрос исторических данных: ${url}`);
 
             const response = await fetch(url, {

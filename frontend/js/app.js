@@ -136,16 +136,25 @@ const app = createApp({
             currentView.value = 'details';
             loadRoomHistory();
         };
+        const calculateAirQuality = (co2) => {
+            if (!co2) return null;
+            if (co2 < 600) return "excellent";
+            if (co2 < 800) return "good";
+            if (co2 < 1000) return "fair";
+            return "poor";
+        };
 
         const loadRoomHistory = async () => {
             if (!selectedRoom.value) return;
-            
             try {
                 historyLoading.value = true;
                 const sensorId = selectedRoom.value.sensorId || selectedRoom.value.id;
-                
                 roomHistory.value = await apiService.getSensorHistory(sensorId, 24);
-                
+                // Добавляем airQuality для каждой записи, если его нет
+                roomHistory.value = roomHistory.value.map(record => ({
+                    ...record,
+                    airQuality: record.airQuality || calculateAirQuality(record.co2)
+                }));
             } catch (err) {
                 console.error('Ошибка загрузки исторических данных:', err);
                 roomHistory.value = [];
@@ -262,15 +271,6 @@ const app = createApp({
             if (campusMap) {
                 campusMap.updateClassrooms(filteredRoomsForMap.value);
             }
-        };
-
-        // Определяем качество воздуха на основе CO2
-        const calculateAirQuality = (co2) => {
-            if (!co2) return null;
-            if (co2 < 600) return "excellent";
-            if (co2 < 800) return "good";
-            if (co2 < 1000) return "fair";
-            return "poor";
         };
 
         // Генератор демо-данных для реальных аудиторий

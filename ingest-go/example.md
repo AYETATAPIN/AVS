@@ -4,9 +4,9 @@
     "sensorId": "sensor_75",
     "buildingName": "Main",
     "roomNumber": "123",
-    "ts": "2027-01-15T10:30:00Z",
-    "co2": 450,
-    "temperature": 22,
+    "ts": "2026-04-15T01:00:00Z",
+    "co2": 20,
+    "temperature": 120,
     "humidity": 50
   }'
 
