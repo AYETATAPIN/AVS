@@ -4,6 +4,7 @@ import com.avs.api_java.entity.RecordEntity;
 import com.avs.api_java.jpa_repository.ApiRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -15,5 +16,9 @@ public class ApiService {
 
     public List<RecordEntity> getCurrentState (){
         return repo.getCurrent();
+    }
+
+    public List<RecordEntity> getSensorHistory(String sensorId, Instant from, Instant to) {
+        return repo.getHistory(sensorId, from, to);
     }
 }
