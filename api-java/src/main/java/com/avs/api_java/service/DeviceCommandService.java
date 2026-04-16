@@ -6,6 +6,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
@@ -17,6 +18,9 @@ import java.util.Map;
 public class DeviceCommandService {
     private final RestTemplate restTemplate;
 
+    @Value("${device-go.base-url}")
+    private String deviceGoBasePath;
+
     public DeviceCommandService() {
         this.restTemplate = new RestTemplate();
     }
@@ -26,7 +30,7 @@ public class DeviceCommandService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(commandPayload, headers);
         try {
-            return restTemplate.exchange("http://localhost:8083/api/commands", HttpMethod.POST, request, String.class);
+            return restTemplate.exchange(deviceGoBasePath + "/api/commands", HttpMethod.POST, request, String.class);
         } catch (HttpStatusCodeException ex) {
             return ResponseEntity.status(ex.getStatusCode()).body(ex.getResponseBodyAsString());
         } catch (ResourceAccessException ex) {
