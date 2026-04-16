@@ -3,8 +3,6 @@ package config
 import (
     "os"
     "strings"
-
-    "github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -24,23 +22,25 @@ type Config struct {
 }
 
 func Load() *Config {
-    // Пробуем загрузить .env файл
-    _ = godotenv.Load()
-    
     return &Config{
-        MQTTBroker:   getEnv("MQTT_BROKER", "tcp://localhost:1883"),
-        MQTTUsername: getEnv("MQTT_USERNAME", ""),
-        MQTTPassword: getEnv("MQTT_PASSWORD", ""),
-        PostgresURL:  getEnv("POSTGRES_URL", "postgres://avs:avs_pass@localhost:5432/avsdb?sslmode=disable"),
-        RedisURL:     getEnv("REDIS_URL", ""),
-        LogLevel:     getEnv("LOG_LEVEL", "info"),
+        MQTTBroker:   getRequiredEnv("MQTT_BROKER"),
+        MQTTUsername: getEnv("MQTT_USERNAME"),
+        MQTTPassword: getEnv("MQTT_PASSWORD"),
+        PostgresURL:  getRequiredEnv("POSTGRES_URL"),
+        RedisURL:     getEnv("REDIS_URL"),
+        LogLevel:     getRequiredEnv("LOG_LEVEL"),
     }
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key string) string {
+    value := os.Getenv(key)
+    return strings.TrimSpace(value)
+}
+
+func getRequiredEnv(key string) string {
     value := os.Getenv(key)
     if strings.TrimSpace(value) == "" {
-        return defaultValue
+        panic("required environment variable is not set: " + key)
     }
     return value
 }

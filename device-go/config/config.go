@@ -4,8 +4,6 @@ import (
     "os"
     "strconv"
     "strings"
-
-    "github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,28 +15,32 @@ type Config struct {
 }
 
 func Load() *Config {
-    _ = godotenv.Load()
     return &Config{
-        HTTPPort:     getEnvAsInt("HTTP_PORT", 8083),
-        MQTTBroker:   getEnv("MQTT_BROKER", "tcp://localhost:1883"),
-        MQTTUsername: getEnv("MQTT_USERNAME", ""),
-        MQTTPassword: getEnv("MQTT_PASSWORD", ""),
-        LogLevel:     getEnv("LOG_LEVEL", "info"),
+		HTTPPort:     getRequiredEnvAsInt("HTTP_PORT"),
+        MQTTBroker:   getRequiredEnv("MQTT_BROKER"),
+		MQTTUsername: getEnv("MQTT_USERNAME"),
+		MQTTPassword: getEnv("MQTT_PASSWORD"),
+		LogLevel:     getRequiredEnv("LOG_LEVEL"),
     }
 }
 
-func getEnv(key, defaultValue string) string {
+func getEnv(key string) string {
+	return strings.TrimSpace(os.Getenv(key))
+}
+
+func getRequiredEnv(key string) string {
     if v := os.Getenv(key); strings.TrimSpace(v) != "" {
         return v
     }
-    return defaultValue
+    panic("required environment variable is not set: " + key)
 }
 
-func getEnvAsInt(key string, defaultValue int) int {
-    if v := os.Getenv(key); v != "" {
+func getRequiredEnvAsInt(key string) int {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
         if i, err := strconv.Atoi(v); err == nil {
             return i
         }
+		panic("required environment variable is not a valid integer: " + key)
     }
-    return defaultValue
+	panic("required environment variable is not set: " + key)
 }
