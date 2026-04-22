@@ -11,9 +11,9 @@ services:
 
   mqtt:
     image: eclipse-mosquitto:1.6.15
-    ports:
-      - 1883:1883
-      - 9001:9001
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquttio.conf
+      - ./passwd:/mosquitto/config/passwd
     restart: unless-stopped
 
   device-go:
@@ -51,9 +51,10 @@ services:
     image: nginx:latest
     ports:
       - 443:443
+      - 8883:8883
     volumes:
       - ./frontend:/usr/share/nginx/html
-      - ./nginx_server.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx_server.conf:/etc/nginx/nginx.conf
       - /etc/letsencrypt:/etc/nginx/ssl
     restart: unless-stopped  
 
