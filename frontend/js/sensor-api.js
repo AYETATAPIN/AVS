@@ -1,6 +1,6 @@
 // Сервис для работы с API датчиков и аутентификации
 class SensorAPIService {
-    constructor(baseUrl = 'http://2.26.119.75:8080/api') {
+    constructor(baseUrl = '/api/') {
         this.baseUrl = baseUrl;
         this.token = localStorage.getItem('authToken') || null;
         this.useDemoMode = localStorage.getItem('useDemoMode') === 'true' || false;

@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: avs
       POSTGRES_PASSWORD: avs_pass
       POSTGRES_DB: avsdb
-    ports:
-      - 5432:5432
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./sql:/docker-entrypoint-initdb.d
@@ -26,8 +24,6 @@ services:
       MQTT_USERNAME: ""
       MQTT_PASSWORD: ""
       LOG_LEVEL: info
-    ports:
-      - 8083:8083
     restart: unless-stopped
 
   ingest-go:
@@ -49,16 +45,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: avs_pass
       DEVICE_GO_BASE_URL: http://device-go:8083
       JWT_SECRET: testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest
-    ports:
-      - 8080:8080
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
-    command: python -m http.server 8000
+    image: nginx:latest
     ports:
-      - 8000:8000
-    restart: unless-stopped
+      - 80:80
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx_server.conf:/etc/nginx/conf.d/default.conf  
+    restart: unless-stopped  
 
 volumes:
   pgdata:
