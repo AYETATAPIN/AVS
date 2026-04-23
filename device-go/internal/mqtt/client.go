@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"device-go/config"
-	"device-go/models"
+	"device-go/internal/config"
+	"device-go/internal/models"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -18,10 +18,10 @@ type Client struct {
     cfg     *config.Config
 }
 
-func NewClient(cfg *config.Config, handler *Handler) *Client {
+func NewClient(cfg *config.Config, waiter *ResponseWaiter) *Client {
     return &Client{
         cfg:     cfg,
-        handler: handler,
+        handler: NewHandler(waiter),
     }
 }
 

@@ -1482,3 +1482,38 @@ body {
 .command-btn.ota-rollback:hover {
     background: #ea580c;
 }
+.card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.details-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.details-btn:hover {
+    background-color: #2563eb;
+}
+
+.device-control-btn {
+    background-color: #8b5cf6;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.device-control-btn:hover {
+    background-color: #7c3aed;
+}

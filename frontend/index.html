@@ -208,9 +208,12 @@
                                 <div class="last-updated">
                                     <small>Обновлено: {{ formatTime(room.lastUpdate) }}</small>
                                 </div>
-                                <div v-if="isAdminAuthenticated" class="admin-actions">
-                                    <button @click="openDeviceControl(room)" class="device-control-btn">
-                                        <i class="fas fa-microchip"></i> Управление
+                                <div class="card-actions">
+                                    <button @click="showRoomDetails(room.id)" class="details-btn">
+                                        <i class="fas fa-chart-line"></i> Подробная информация
+                                    </button>
+                                    <button v-if="isAdminAuthenticated" @click="openDeviceControl(room)" class="device-control-btn">
+                                        <i class="fas fa-microchip"></i> Управление устройством
                                     </button>
                                 </div>
                             </div>

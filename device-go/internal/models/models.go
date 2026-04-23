@@ -1,7 +1,6 @@
 package models
 
 // Список поддерживаемых команд
-// Список поддерживаемых команд
 const (
     CmdReboot        = "reboot"
     CmdGetSensors    = "get_sensors"

@@ -1,8 +1,9 @@
 package config
 
 import (
-    "os"
-    "strings"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -43,4 +44,16 @@ func getRequiredEnv(key string) string {
         panic("required environment variable is not set: " + key)
     }
     return value
+}
+
+func getEnvAsInt(key string, def int) int {
+    v := getEnv(key)
+    if v == "" {
+        return def
+    }
+    i, err := strconv.Atoi(v)
+    if err != nil {
+        return def
+    }
+    return i
 }

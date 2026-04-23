@@ -2,8 +2,8 @@ package main
 
 import (
     "log"
-    "device-go/internal/app"
-    "device-go/internal/config"
+    "ingest-go/internal/app"
+    "ingest-go/internal/config"
 )
 
 func main() {
