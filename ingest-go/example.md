@@ -1,10 +1,11 @@
 ## Отправка в топик
 
-  mosquitto_pub -h localhost -t "sensors/room123/data" -m '{
+mosquitto_pub -h nsu-metrics.ru -u "avs" -P "avs" --capath /etc/ssl/certs/ -t "sensors/room123/d
+ata" -m '{
     "sensorId": "sensor_75",
     "buildingName": "Main",
     "roomNumber": "123",
-    "ts": "2026-04-15T01:00:00Z",
+    "ts": "2027-04-15T01:00:00Z",
     "co2": 20,
     "temperature": 120,
     "humidity": 50
