@@ -19,6 +19,11 @@ func main() {
     log.Println("Starting AVS Ingest Service...")
     log.Printf("MQTT Broker: %s", cfg.MQTTBroker)
     log.Printf("PostgreSQL: %s", cfg.PostgresURL)
+    if cfg.MQTTUsername == "" {
+        log.Println("MQTT Auth: no username set (will connect anonymously)")
+    } else {
+        log.Printf("MQTT Auth: username=%q (password set=%t)", cfg.MQTTUsername, cfg.MQTTPassword != "")
+    }
     
     // Инициализируем хранилище
     db, err := storage.NewPostgres(cfg.PostgresURL)
