@@ -90,9 +90,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
-      - GF_SERVER_DOMAIN=nsu-metrics.ru
       - GF_SERVER_ROOT_URL=https://nsu-metrics.ru/dashboard/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     restart: unless-stopped
 
   node-exporter:
