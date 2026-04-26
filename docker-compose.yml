@@ -12,7 +12,7 @@ services:
   mqtt:
     image: eclipse-mosquitto:1.6.15
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquttio.conf
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./passwd:/mosquitto/config/passwd
     restart: unless-stopped
 
@@ -56,7 +56,55 @@ services:
       - ./frontend:/usr/share/nginx/html
       - ./nginx_server.conf:/etc/nginx/nginx.conf
       - /etc/letsencrypt:/etc/nginx/ssl
-    restart: unless-stopped  
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/etc/prometheus
+    restart: unless-stopped
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    command:
+      - -nginx.scrape-uri=http://frontend:8081
+    ports:
+      - 9113:9113
+    restart: unless-stopped
+
+  mqtt-exporter:
+    image: sapcc/mosquitto-exporter:latest
+    ports:
+      - 9234:9234
+    environment:
+      - MQTT_ENDPOINT=tcp://mqtt:1883
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    network_mode: host
+    pid: host
+    volumes:
+      - /:/host
+    command:
+      - '--path.rootfs=/host'
+      - '--web.listen-address=172.17.0.1:9100'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped        
+
 
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:
