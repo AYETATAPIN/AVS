@@ -3,7 +3,7 @@ package storage
 import (
     "time"
 
-    "ingest-go/internal/models"
+    "ingest-go/models"
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
     "gorm.io/gorm/schema" // Добавляем этот импорт

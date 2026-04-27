@@ -12,8 +12,13 @@ services:
   mqtt:
     image: eclipse-mosquitto:1.6.15
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquttio.conf
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./passwd:/mosquitto/config/passwd
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    command: ["redis-server", "--appendonly", "no"]
     restart: unless-stopped
 
   device-go:
@@ -33,7 +38,7 @@ services:
       MQTT_USERNAME: "avs"
       MQTT_PASSWORD: "avs"
       POSTGRES_URL: postgres://avs:avs_pass@postgres:5432/avsdb?sslmode=disable
-      REDIS_URL: ""
+      REDIS_URL: redis://redis:6379
       LOG_LEVEL: info
     restart: unless-stopped
 
@@ -43,6 +48,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/avsdb
       SPRING_DATASOURCE_USERNAME: avs
       SPRING_DATASOURCE_PASSWORD: avs_pass
+      SPRING_REDIS_URL: redis://redis:6379
       DEVICE_GO_BASE_URL: http://device-go:8083
       JWT_SECRET: testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttest
     restart: unless-stopped
@@ -56,7 +62,62 @@ services:
       - ./frontend:/usr/share/nginx/html
       - ./nginx_server.conf:/etc/nginx/nginx.conf
       - /etc/letsencrypt:/etc/nginx/ssl
-    restart: unless-stopped  
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/etc/prometheus
+    restart: unless-stopped
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    command:
+      - -nginx.scrape-uri=http://frontend:8081
+    restart: unless-stopped
+
+  mqtt-exporter:
+    image: sapcc/mosquitto-exporter:latest
+    environment:
+      - BROKER_ENDPOINT=tcp://mqtt:1883
+      - MQTT_USER=avs
+      - MQTT_PASS=avs
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://nsu-metrics.ru/dashboard/
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    network_mode: host
+    pid: host
+    volumes:
+      - /:/host
+    command:
+      - '--path.rootfs=/host'
+      - '--web.listen-address=172.17.0.1:9100'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      - DATA_SOURCE_NAME=postgresql://avs:avs_pass@postgres:5432/avsdb?sslmode=disable
+    restart: unless-stopped             
 
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:

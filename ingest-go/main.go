@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
     "encoding/json"
@@ -8,34 +8,33 @@ import (
     "syscall"
     "time"
 
-    "ingest-go/internal/config"
-    "ingest-go/internal/mqtt"
-    "ingest-go/internal/storage"
+    "ingest-go/config"
+    "ingest-go/mqtt"
+    "ingest-go/storage"
 )
 
-func Run(cfg *config.Config) error {
+func main() {
+    // Загружаем конфигурацию
+    cfg := config.Load()
+    
     log.Println("Starting AVS Ingest Service...")
     log.Printf("MQTT Broker: %s", cfg.MQTTBroker)
     log.Printf("PostgreSQL: %s", cfg.PostgresURL)
-
-    // PostgreSQL
+    
+    // Инициализируем хранилище
     db, err := storage.NewPostgres(cfg.PostgresURL)
     if err != nil {
-        return err
+        log.Fatalf("Failed to connect to PostgreSQL: %v", err)
     }
     defer db.Close()
+    
     log.Println("PostgreSQL connection established")
 
-<<<<<<< HEAD:ingest-go/main.go
     // Инициализируем Redis (опционально)
-=======
-    // Опционально Redis (если URL задан)
->>>>>>> origin/main:ingest-go/internal/app/app.go
     var redisClient *storage.RedisClient
     if cfg.RedisURL != "" {
         redisClient = storage.NewRedisClient(cfg.RedisURL)
         defer redisClient.Close()
-<<<<<<< HEAD:ingest-go/main.go
 
         // Backfill Redis "current state" from PostgreSQL on startup
         current, err := db.GetCurrentState()
@@ -82,32 +81,27 @@ func Run(cfg *config.Config) error {
     handler := mqtt.NewHandler(db, redisClient)
     
     // Настраиваем MQTT клиент
-=======
-        log.Println("Redis connection established")
-    }
-
-    // MQTT
-    handler := mqtt.NewHandler(db, redisClient) // можно передать redis для кэширования
->>>>>>> origin/main:ingest-go/internal/app/app.go
     mqttOpts := mqtt.NewClientOptions(cfg.MQTTBroker, "avs-ingest")
     if cfg.MQTTUsername != "" {
         mqttOpts.SetUsername(cfg.MQTTUsername)
         mqttOpts.SetPassword(cfg.MQTTPassword)
     }
     client := mqtt.NewClient(mqttOpts, handler)
-
+    
     if err := client.Connect(); err != nil {
-        return err
+        log.Fatalf("Failed to connect to MQTT: %v", err)
     }
     defer client.Disconnect()
+    
     log.Println("MQTT connection established")
-
-    // Подписки
+    
+    // Подписываемся на топики
     topics := []string{
-        "sensors/+/data",
-        "sensors/+/status",
-        "commands/+/+",
+        "sensors/+/data",      // Данные от сенсоров
+        "sensors/+/status",    // Статус сенсоров
+        "commands/+/+",        // Команды для сенсоров
     }
+    
     for _, topic := range topics {
         if err := client.Subscribe(topic, 1); err != nil {
             log.Printf("Failed to subscribe to %s: %v", topic, err)
@@ -115,14 +109,18 @@ func Run(cfg *config.Config) error {
             log.Printf("Subscribed to: %s", topic)
         }
     }
-
-    // Graceful shutdown
+    
+    // Ожидаем сигнал завершения
     sigChan := make(chan os.Signal, 1)
     signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+    
     log.Println("Service is running. Press Ctrl+C to stop.")
+    
+    // Graceful shutdown
     <-sigChan
     log.Println("Shutting down...")
+    
+    // Даем время на завершение операций
     time.Sleep(2 * time.Second)
     log.Println("Service stopped")
-    return nil
 }

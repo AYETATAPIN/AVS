@@ -1,11 +1,10 @@
 module ingest-go
 
-go 1.25.1
+go 1.24.0
 
 require (
-	github.com/eclipse/paho.mqtt.golang v1.5.1
+	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/joho/godotenv v1.5.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
