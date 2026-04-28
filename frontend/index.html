@@ -215,6 +215,12 @@
                                     <button v-if="isAdminAuthenticated" @click="openDeviceControl(room)" class="action-btn device-btn">
                                         <i class="fas fa-microchip"></i> Управление устройством
                                     </button>
+                                    <button v-if="isAdminAuthenticated" @click="registerDeviceForRoom(room)" 
+                                            class="action-btn register-btn" :disabled="registering">
+                                        <i class="fas fa-link"></i> 
+                                        <span v-if="registering">Регистрация...</span>
+                                        <span v-else>Зарегистрировать датчик</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>

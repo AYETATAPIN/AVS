@@ -1545,3 +1545,14 @@ body {
 .card-actions.single-button .action-btn {
     width: 180px;
 }
+.register-btn {
+    background-color: #10b981;
+}
+.register-btn:hover {
+    background-color: #059669;
+}
+.register-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}

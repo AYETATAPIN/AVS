@@ -85,3 +85,21 @@ func (c *Client) PublishCommand(deviceID string, cmd *models.MQTTCommand) error 
     log.Printf("Successfully published command %s", cmd.CommandID)
     return nil
 }
+
+// PublishCommandToTopic публикует команду в произвольный MQTT топик
+func (c *Client) PublishCommandToTopic(topic string, cmd *models.MQTTCommand) error {
+    payload, err := json.Marshal(cmd)
+    if err != nil {
+        return err
+    }
+    log.Printf("Publishing command to %s: command_id=%s, command=%s, parameters=%v",
+        topic, cmd.CommandID, cmd.Command, cmd.Parameters)
+    token := c.client.Publish(topic, 1, false, payload)
+    token.Wait()
+    if token.Error() != nil {
+        log.Printf("Failed to publish command %s: %v", cmd.CommandID, token.Error())
+        return token.Error()
+    }
+    log.Printf("Successfully published command %s", cmd.CommandID)
+    return nil
+}

@@ -13,6 +13,7 @@ const (
     CmdGetOrientation = "get_orientation"
     CmdPowerOn       = "power_on"   
     CmdPowerOff      = "power_off"  
+    CmdRegister      = "register"    
 )
 
 // AllCommands возвращает список всех доступных команд
@@ -29,6 +30,7 @@ func AllCommands() []string {
         CmdGetOrientation,
         CmdPowerOn,
         CmdPowerOff,
+        CmdRegister,
     }
 }
 

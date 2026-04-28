@@ -53,6 +53,36 @@ const app = createApp({
         const currentDeviceId = ref(null);
         const commandResult = ref(null);
         const commandLoading = ref(false);
+        // Флаг, блокирующий повторные нажатия
+        const registering = ref(false);
+
+        // Функция регистрации (обновлённая)
+        const registerDeviceForRoom = async (room) => {
+            if (!isAdminAuthenticated.value) {
+                alert('Только для администратора');
+                return;
+            }
+            if (registering.value) {
+                console.log('Регистрация уже выполняется, игнорируем повторный клик');
+                return;
+            }
+            registering.value = true;
+
+            try {
+                const result = await apiService.registerDevice(room.buildingName, room.roomNumber);
+                if (result.status === 'success') {
+                    const deviceId = result.data?.device_id || 'неизвестный';
+                    alert(`Устройство ${deviceId} зарегистрировано для аудитории ${room.name}`);
+                    // При желании обновите room.sensorId = deviceId
+                } else {
+                    alert('Ошибка регистрации: ' + (result.data?.error || 'таймаут'));
+                }
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            } finally {
+                registering.value = false;
+            }
+        };
 
         // Проверяем аутентификацию при загрузке
         const checkAuth = async () => {
@@ -631,6 +661,8 @@ const app = createApp({
             sendDeviceCommand,
             confirmPowerOff,
             sendOTAUpdate,
+            registerDeviceForRoom,
+            registering,
         };
     }
 });

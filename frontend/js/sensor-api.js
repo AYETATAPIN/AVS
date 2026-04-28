@@ -196,7 +196,13 @@ class SensorAPIService {
             throw error;
         }
     }
-
+    
+    async registerDevice(buildingName, roomNumber) {
+        return this.sendDeviceCommand("dynamic", "register", {
+            building_name: buildingName,
+            room_number: roomNumber
+        });
+    }
 
     async getSensorHistory(sensorId, hours = 24) {
         try {
