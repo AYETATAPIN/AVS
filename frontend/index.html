@@ -315,7 +315,22 @@
                                 <p><i class="fas fa-info-circle"></i> Данные с датчиков отсутствуют</p>
                             </div>
                         </div>
-                        
+                        <div class="history-controls">
+                            <div class="control-group">
+                                <label>С:</label>
+                                <input type="date" v-model="historyFromDate">
+                            </div>
+                            <div class="control-group">
+                                <label>По:</label>
+                                <input type="date" v-model="historyToDate">
+                            </div>
+                            <div class="control-group">
+                                <label>Интервал:</label>
+                                <select v-model="intervalSeconds" @change="loadRoomHistory">
+                                    <option v-for="opt in intervalOptions" :value="opt.value">{{ opt.label }}</option>
+                                </select>
+                            </div>
+                        </div>
                         <!-- Графики -->
                         <div class="charts-section">
                             <h3>Исторические данные за последние 24 часа</h3>

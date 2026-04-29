@@ -30,7 +30,64 @@ const app = createApp({
         const selectedRoom = ref(null);
         const roomHistory = ref([]);
         const historyLoading = ref(false);
-        
+        const historyFrom = ref(new Date(Date.now() - 24 * 60 * 60 * 1000)); // 24 часа назад
+        const historyTo = ref(new Date());
+
+        // Вычисляемые свойства для datetime-local (формат YYYY-MM-DDThh:mm)
+        const historyFromDate = ref(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+        const historyToDate = ref(new Date().toISOString().slice(0, 10));
+
+        // Функции для преобразования даты в Instant (начало/конец дня)
+        const getStartOfDay = (dateStr) => {
+            if (!dateStr) return null;
+            const d = new Date(dateStr);
+            d.setUTCHours(0, 0, 0, 0);
+            return d;
+        };
+        const getEndOfDay = (dateStr) => {
+            if (!dateStr) return null;
+            const d = new Date(dateStr);
+            d.setUTCHours(23, 59, 59, 999);
+            return d;
+        };
+
+        // Параметры интервала и опции (без изменений)
+        const intervalSeconds = ref(3600);
+        const intervalOptions = [
+            { label: '1 час', value: 3600 },
+            { label: '3 часа', value: 10800 },
+            { label: '6 часов', value: 21600 },
+            { label: '12 часов', value: 43200 },
+            { label: '24 часа', value: 86400 }
+        ];
+
+        // Функция загрузки истории (уже должна быть, используем historyFrom/To/intervalSeconds)
+        const loadRoomHistory = async () => {
+            if (!selectedRoom.value) return;
+            try {
+                historyLoading.value = true;
+                const sensorId = selectedRoom.value.sensorId || selectedRoom.value.id;
+                const from = getStartOfDay(historyFromDate.value);
+                const to = getEndOfDay(historyToDate.value);
+                if (!from || !to) return;
+                roomHistory.value = await apiService.getSensorHistoryAggregated(
+                    sensorId, from, to, intervalSeconds.value);
+                roomHistory.value = roomHistory.value.map(record => ({
+                    ...record,
+                    airQuality: calculateAirQuality(record.co2)
+                }));
+            } catch (err) {
+                console.error('Ошибка загрузки исторических данных:', err);
+                roomHistory.value = [];
+            } finally {
+                historyLoading.value = false;
+            }
+        };
+
+        // Следить за изменением дат
+        watch([historyFromDate, historyToDate], () => {
+            loadRoomHistory();
+        });
         // Свойства для аутентификации
         const isAdminAuthenticated = ref(false);
         // Инициализация глобальной переменной для доступа из карты
@@ -174,24 +231,7 @@ const app = createApp({
             return "poor";
         };
 
-        const loadRoomHistory = async () => {
-            if (!selectedRoom.value) return;
-            try {
-                historyLoading.value = true;
-                const sensorId = selectedRoom.value.sensorId || selectedRoom.value.id;
-                roomHistory.value = await apiService.getSensorHistory(sensorId, 24);
-                // Добавляем airQuality для каждой записи, если его нет
-                roomHistory.value = roomHistory.value.map(record => ({
-                    ...record,
-                    airQuality: record.airQuality || calculateAirQuality(record.co2)
-                }));
-            } catch (err) {
-                console.error('Ошибка загрузки исторических данных:', err);
-                roomHistory.value = [];
-            } finally {
-                historyLoading.value = false;
-            }
-        };
+
         // Метод открытия модального окна управления
         const openDeviceControl = (room) => {
             if (!isAdminAuthenticated.value) return;
@@ -663,6 +703,13 @@ const app = createApp({
             sendOTAUpdate,
             registerDeviceForRoom,
             registering,
+            historyFrom,
+            historyTo,
+            intervalSeconds,
+            intervalOptions,
+            historyFromDate,
+            historyToDate,
+            loadRoomHistory,
         };
     }
 });

@@ -20,6 +20,19 @@ func NewHandler(db *storage.PostgresDB, redis *storage.RedisClient) *Handler {
     return &Handler{db: db, redis: redis}
 }
 
+// redisRecord — формат, который ожидает api-java при чтении HGETALL avs:sensors:current.
+// Поля идут в camelCase, потому что Jackson на стороне Java маппит их в RecordEntity.
+type redisRecord struct {
+    ID           uint      `json:"id"`
+    SensorID     string    `json:"sensorId"`
+    BuildingName string    `json:"buildingName"`
+    RoomNumber   string    `json:"roomNumber"`
+    TS           time.Time `json:"ts"`
+    CO2          int       `json:"co2"`
+    Temperature  int       `json:"temperature"`
+    Humidity     int       `json:"humidity"`
+}
+
 func (h *Handler) HandleMessage(client mqtt.Client, msg mqtt.Message) {
     topic := msg.Topic()
     log.Printf("MQTT message on %s", topic)
@@ -37,7 +50,8 @@ func (h *Handler) HandleMessage(client mqtt.Client, msg mqtt.Message) {
 func (h *Handler) handleSensorData(payload []byte) {
     var mqttMsg models.MQTTMessage
     if err := json.Unmarshal(payload, &mqttMsg); err != nil {
-        log.Printf("JSON parse error: %v", err)
+        log.Printf("Error parsing sensor data JSON: %v", err)
+        log.Printf("Raw payload: %s", string(payload))
         return
     }
 
@@ -55,25 +69,40 @@ func (h *Handler) handleSensorData(payload []byte) {
     }
 
     if err := h.db.CreateSensorData(&data); err != nil {
-        log.Printf("DB save error: %v", err)
+        log.Printf("Error saving sensor data to PostgreSQL: %v", err)
         return
     }
 
     if h.redis != nil {
-        if b, err := json.Marshal(data); err == nil {
-            h.redis.SetDeviceData(data.SensorID, b, 24*time.Hour)
+        rec := redisRecord{
+            ID:           data.ID,
+            SensorID:     data.SensorID,
+            BuildingName: data.BuildingName,
+            RoomNumber:   data.RoomNumber,
+            TS:           data.TS,
+            CO2:          data.CO2,
+            Temperature:  data.Temperature,
+            Humidity:     data.Humidity,
+        }
+        if b, err := json.Marshal(rec); err != nil {
+            log.Printf("Error marshaling Redis current record: %v", err)
+        } else if err := h.redis.SetCurrentSensorRecord(data.SensorID, b); err != nil {
+            log.Printf("Error writing Redis current record: %v", err)
         }
     }
 
-    log.Printf("Saved: %s (%s, %s) CO2=%d Temp=%d Hum=%d",
+    log.Printf("MQTT: %s/%s (english) -> DB: %s/%s (russian)",
+        mqttMsg.BuildingName, mqttMsg.RoomNumber,
+        data.BuildingName, data.RoomNumber)
+    log.Printf("Saved: %s (%s, %s) - CO2: %dppm, Temp: %d°C, Humidity: %d%%",
         data.SensorID, data.BuildingName, data.RoomNumber,
         data.CO2, data.Temperature, data.Humidity)
 }
 
 func (h *Handler) handleSensorStatus(payload []byte) {
-    log.Printf("Status: %s", payload)
+    log.Printf("Sensor status: %s", string(payload))
 }
 
 func (h *Handler) handleCommand(payload []byte) {
-    log.Printf("Command: %s", payload)
+    log.Printf("Command received: %s", string(payload))
 }

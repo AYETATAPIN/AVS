@@ -17,12 +17,21 @@ public interface ApiRepository extends JpaRepository<RecordEntity, Long> {
     List<RecordEntity> getCurrent();
 
     @Query(value = """
-        SELECT *
+        SELECT
+            to_timestamp(floor(extract(epoch from ts) / :intervalSeconds) * :intervalSeconds) AS bucket,
+            ROUND(AVG(co2))::integer AS co2,
+            ROUND(AVG(temperature))::integer AS temperature,
+            ROUND(AVG(humidity))::integer AS humidity
         FROM sensors
         WHERE sensor_id = :sensorId
           AND ts >= :from
           AND ts <= :to
-        ORDER BY ts ASC
+        GROUP BY bucket
+        ORDER BY bucket ASC
         """, nativeQuery = true)
-    List<RecordEntity> getHistory(@Param("sensorId") String sensorId, @Param("from") Instant from, @Param("to") Instant to);
+    List<Object[]> getHistoryAggregated(
+            @Param("sensorId") String sensorId,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            @Param("intervalSeconds") long intervalSeconds);
 }

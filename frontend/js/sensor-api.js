@@ -196,59 +196,25 @@ class SensorAPIService {
             throw error;
         }
     }
+
+    async getSensorHistoryAggregated(sensorId, from, to, intervalSeconds = 3600) {
+        if (this.useDemoMode) {
+            return this.generateDemoHistoryData(24); // или генерировать агрегированные демо-данные
+        }
+        const url = `${this.baseUrl}/sensors/${sensorId}/history/aggregated?from=${from.toISOString()}&to=${to.toISOString()}&intervalSeconds=${intervalSeconds}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
+        return await response.json();
+    }    
     
     async registerDevice(buildingName, roomNumber) {
         return this.sendDeviceCommand("dynamic", "register", {
             building_name: buildingName,
             room_number: roomNumber
         });
-    }
-
-    async getSensorHistory(sensorId, hours = 24) {
-        try {
-            // Демо-режим — генерируем тестовые данные
-            if (this.useDemoMode) {
-                console.log(`Демо-режим: генерация исторических данных для датчика ${sensorId}`);
-                return this.generateDemoHistoryData(hours);
-            }
-
-            // Реальный запрос к Java API
-            const to = new Date().toISOString();
-            const from = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-            const url = `${this.baseUrl}/sensors/${sensorId}/history?from=${from}&to=${to}`;
-            console.log(`Запрос исторических данных: ${url}`);
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    // Если требуется авторизация, добавляем токен
-                    ...(this.token && { 'Authorization': `Bearer ${this.token}` })
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            // Проверяем, что ответ — массив
-            if (!Array.isArray(data)) {
-                console.warn('Ответ сервера не является массивом, возвращаем пустой массив');
-                return [];
-            }
-
-            // Опционально: можно провести валидацию полей или преобразование,
-            // но предполагаем, что сервер возвращает данные в нужном формате
-            return data;
-
-        } catch (error) {
-            console.error('Ошибка загрузки исторических данных:', error);
-            // В реальном режиме при ошибке возвращаем пустой массив,
-            // чтобы не подмешивать демо-данные
-            return [];
-        }
     }
 
     async sendDeviceCommand(deviceId, command, parameters = {}) {

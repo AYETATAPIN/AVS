@@ -1,24 +1,19 @@
 package config
 
 import (
-	"os"
-	"strconv"
-	"strings"
+    "os"
+    "strings"
 )
 
 type Config struct {
-    // MQTT
     MQTTBroker   string
     MQTTUsername string
     MQTTPassword string
-    
-    // PostgreSQL
+
     PostgresURL string
-    
-    // Redis (опционально)
+
     RedisURL string
-    
-    // Логирование
+
     LogLevel string
 }
 
@@ -43,8 +38,7 @@ func Load() *Config {
 }
 
 func getEnv(key string) string {
-    value := os.Getenv(key)
-    return strings.TrimSpace(value)
+    return strings.TrimSpace(os.Getenv(key))
 }
 
 func getRequiredEnv(key string) string {
@@ -53,16 +47,4 @@ func getRequiredEnv(key string) string {
         panic("required environment variable is not set: " + key)
     }
     return value
-}
-
-func getEnvAsInt(key string, def int) int {
-    v := getEnv(key)
-    if v == "" {
-        return def
-    }
-    i, err := strconv.Atoi(v)
-    if err != nil {
-        return def
-    }
-    return i
 }

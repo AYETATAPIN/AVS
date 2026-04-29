@@ -25,9 +25,12 @@ MQTT_PASS = os.environ["MQTT_PASSWORD"]
 MQTT_KEEPALIVE = 180
 MQTT_TIMEOUT = 10
 MQTT_QOS = 1
-MQTT_USERS_FIXED = 940
 HTTP_HOST = "https://nsu-metrics.ru"
 HTTP_TIMEOUT = 120
+
+# Sensors backed by real hardware — locust must NOT impersonate them,
+# иначе фейковые публикации затрут реальные показания в "current".
+REAL_SENSORS: set[str] = {"sensor_631"}  # ESP32, аудитория 2128
 
 @dataclass(frozen=True)
 class Sensor:
@@ -41,11 +44,14 @@ def load_sensors() -> list[Sensor]:
     with open("ingest-go/mapping_eng.txt", "r", encoding="utf-8") as f:
         for line in filter(str.strip, f):
             s_id, room, bld = (p.strip() for p in line.split("|"))
+            if s_id in REAL_SENSORS:
+                continue
             sensors.append(Sensor(s_id, int(s_id.split("_")[1]), room, bld))
     return sensors
 
 SENSORS = load_sensors()
 SENSOR_CYCLE = cycle(SENSORS)
+MQTT_USERS_FIXED = len(SENSORS)
 
 STATIC_ASSETS = [
     "/style.css",
@@ -179,11 +185,12 @@ class WebHttpUser(HttpUser):
         to_ts = datetime.now(timezone.utc)
         from_ts = to_ts - timedelta(hours=24)
         self.client.get(
-            f"/api/sensors/{sensor}/history",
+            f"/api/sensors/{sensor}/history/aggregated",
             params={
                 "from": from_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "to": to_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "intervalSeconds": 3600,
             },
-            name="GET /api/sensors/:sensor/history",
+            name="GET /api/sensors/:sensor/history/aggregated",
             timeout=HTTP_TIMEOUT,
         )

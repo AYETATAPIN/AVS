@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ApiService {
@@ -30,7 +31,15 @@ public class ApiService {
         return repo.getCurrent();
     }
 
-    public List<RecordEntity> getSensorHistory(String sensorId, Instant from, Instant to) {
-        return repo.getHistory(sensorId, from, to);
+    public List<RecordEntity> getSensorHistoryAggregated(String sensorId, Instant from, Instant to, long intervalSeconds) {
+        return repo.getHistoryAggregated(sensorId, from, to, intervalSeconds).stream().map(row -> {
+            RecordEntity record = new RecordEntity();
+            record.setSensorId(sensorId);
+            record.setTs((Instant) row[0]);
+            record.setCo2(((Number) row[1]).intValue());
+            record.setTemperature(((Number) row[2]).intValue());
+            record.setHumidity(((Number) row[3]).intValue());
+            return record;
+        }).collect(Collectors.toList());
     }
 }
