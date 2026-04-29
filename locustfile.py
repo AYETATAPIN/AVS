@@ -28,9 +28,7 @@ MQTT_QOS = 1
 HTTP_HOST = "https://nsu-metrics.ru"
 HTTP_TIMEOUT = 120
 
-# Sensors backed by real hardware — locust must NOT impersonate them,
-# иначе фейковые публикации затрут реальные показания в "current".
-REAL_SENSORS: set[str] = {"sensor_631"}  # ESP32, аудитория 2128
+REAL_SENSORS: set[str] = {"sensor_631"}
 
 @dataclass(frozen=True)
 class Sensor:
@@ -122,7 +120,7 @@ class MqttSensorUser(User):
         if not self.is_connected:
             return
 
-        topic = f"sensors/{self.sensor.index}/data"
+        topic = f"sensors/sensor_{self.sensor.index}/data"
         payload = json.dumps({
             "sensorId": self.sensor.id,
             "buildingName": self.sensor.building,
