@@ -52,6 +52,13 @@ func (p *PostgresDB) CreateSensorData(data *models.SensorData) error {
     return p.db.Create(data).Error
 }
 
+func (p *PostgresDB) CreateSensorDataBatch(rows []models.SensorData) error {
+    if len(rows) == 0 {
+        return nil
+    }
+    return p.db.CreateInBatches(rows, len(rows)).Error
+}
+
 func (p *PostgresDB) GetLatestSensorData(sensorID string, limit int) ([]models.SensorData, error) {
     var data []models.SensorData
     err := p.db.Where("sensor_id = ?", sensorID).

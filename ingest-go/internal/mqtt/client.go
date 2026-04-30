@@ -29,10 +29,10 @@ func NewClientOptions(broker, clientID string) *mqtt.ClientOptions {
 	opts.SetMaxReconnectInterval(10 * time.Second)
 	opts.SetOrderMatters(false)
 	opts.SetMessageChannelDepth(10000)
+	opts.SetAutoAckDisabled(true)
 
 	log.Printf("MQTT ClientID: %s", fullClientID)
 
-	// Callback-и
 	opts.OnConnect = func(c mqtt.Client) {
 		log.Println("Connected to MQTT broker")
 	}

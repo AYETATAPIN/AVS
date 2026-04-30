@@ -57,10 +57,20 @@ func (r *RedisClient) SetDeviceStatus(deviceID string, status string) error {
     return r.Client.Set(r.Ctx, key, status, time.Hour).Err()
 }
 
-// SetCurrentSensorRecord stores latest record JSON for a sensor_id.
-// Hash field is sensorID, value is JSON string.
 func (r *RedisClient) SetCurrentSensorRecord(sensorID string, recordJSON []byte) error {
     return r.Client.HSet(r.Ctx, SensorsCurrentKey, sensorID, recordJSON).Err()
+}
+
+func (r *RedisClient) SetCurrentSensorRecordsBatch(records map[string][]byte) error {
+    if len(records) == 0 {
+        return nil
+    }
+    pipe := r.Client.Pipeline()
+    for sensorID, recordJSON := range records {
+        pipe.HSet(r.Ctx, SensorsCurrentKey, sensorID, recordJSON)
+    }
+    _, err := pipe.Exec(r.Ctx)
+    return err
 }
 
 func (r *RedisClient) GetAllCurrentSensorRecords() (map[string]string, error) {

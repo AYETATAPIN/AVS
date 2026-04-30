@@ -1,13 +1,23 @@
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
 CREATE TABLE IF NOT EXISTS sensors (
-  id            bigserial PRIMARY KEY,
+  id            bigserial,
   sensor_id     text NOT NULL,
   building_name text NOT NULL,
   room_number   text NOT NULL,
   ts            timestamptz NOT NULL DEFAULT now(),
   co2           integer NOT NULL DEFAULT 0,
   temperature   integer NOT NULL DEFAULT 0,
-  humidity      integer NOT NULL DEFAULT 0
+  humidity      integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (id, ts)
 );
+
+SELECT create_hypertable('sensors', 'ts', chunk_time_interval => INTERVAL '1 day', if_not_exists => TRUE);
+
+CREATE INDEX IF NOT EXISTS idx_sensors_sensor_id_ts ON sensors (sensor_id, ts DESC);
+
+ALTER TABLE sensors SET (timescaledb.compress, timescaledb.compress_segmentby = 'sensor_id');
+SELECT add_compression_policy('sensors', INTERVAL '1 day');
 
 WITH
 units AS (
