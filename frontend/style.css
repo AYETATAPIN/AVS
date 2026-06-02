@@ -1569,3 +1569,15 @@ body {
     border-radius: 6px;
     border: 1px solid #ccc;
 }
+
+.card-actions .register-sensor-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.card-actions .register-sensor-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+}

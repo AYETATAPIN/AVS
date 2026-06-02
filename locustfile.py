@@ -91,8 +91,54 @@ class MqttSensorUser(User):
         ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE
         self.mqtt_client.tls_set_context(ctx)
         self.mqtt_client.reconnect_delay_set(1.5, 15.0)
-        self.mqtt_client.on_connect = lambda c, u, f, rc, *_: setattr(self, "is_connected", getattr(rc, "value", rc) == 0)
-        self.mqtt_client.on_disconnect = lambda c, u, *_: setattr(self, "is_connected", False)
+        self.mqtt_client.on_connect = self._on_connect
+        self.mqtt_client.on_disconnect = self._on_disconnect
+        self.mqtt_client.on_message = self._on_message
+
+    def _on_connect(self, client, userdata, flags, rc, *args):
+        err_code = getattr(rc, "value", rc)
+        if err_code == 0:
+            self.is_connected = True
+            client.subscribe("devices/register/#", qos=1)
+            client.subscribe(f"devices/{self.sensor.id}/commands", qos=1)
+        else:
+            self.is_connected = False
+
+    def _on_disconnect(self, client, userdata, *args):
+        self.is_connected = False
+
+    def _on_message(self, client, userdata, msg):
+        try:
+            topic = msg.topic
+            payload = json.loads(msg.payload.decode("utf-8"))
+            command = payload.get("command")
+            command_id = payload.get("command_id")
+            
+            if command == "register":
+                params = payload.get("parameters", {})
+                building = params.get("building_name")
+                room = params.get("room_number")
+                
+                if building and room:
+                    self.sensor = Sensor(
+                        id=self.sensor.id,
+                        index=self.sensor.index,
+                        room=room,
+                        building=building
+                    )
+                    print(f"[{self.sensor.id}] Registered to {building} - {room}!")
+                    
+                    response_topic = f"devices/{self.sensor.id}/response"
+                    response_payload = json.dumps({
+                        "command_id": command_id,
+                        "status": "success",
+                        "data": {
+                            "message": f"Successfully registered to {building} {room}"
+                        }
+                    })
+                    self.mqtt_client.publish(response_topic, response_payload, qos=1)
+        except Exception as e:
+            print(f"Error handling message on {msg.topic}: {e}")
 
     def on_start(self):
         time.sleep(random.uniform(0.0, 60.0))

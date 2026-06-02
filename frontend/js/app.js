@@ -110,6 +110,11 @@ const app = createApp({
         const currentDeviceId = ref(null);
         const commandResult = ref(null);
         const commandLoading = ref(false);
+        
+        const showRegisterSensorModal = ref(false);
+        const selectedRoomForRegistration = ref(null);
+        const registrationLoading = ref(false);
+        const registrationResult = ref(null);
 
         // Проверяем аутентификацию при загрузке
         const checkAuth = async () => {
@@ -238,6 +243,54 @@ const app = createApp({
             showDeviceControlModal.value = false;
             currentDeviceId.value = null;
             commandResult.value = null;
+        };
+
+        const openRegisterSensorModal = (room) => {
+            selectedRoomForRegistration.value = room;
+            showRegisterSensorModal.value = true;
+            registrationResult.value = null;
+            registrationLoading.value = false;
+        };
+
+        const closeRegisterSensor = () => {
+            showRegisterSensorModal.value = false;
+            selectedRoomForRegistration.value = null;
+            registrationResult.value = null;
+            registrationLoading.value = false;
+        };
+
+        const startSensorRegistration = async () => {
+            if (!selectedRoomForRegistration.value) return;
+            registrationLoading.value = true;
+            registrationResult.value = null;
+            try {
+                const room = selectedRoomForRegistration.value;
+                const result = await apiService.registerDevice(room.buildingName, room.roomNumber);
+                
+                if (result && (result.status === 'success' || result.status === 'sent')) {
+                    registrationResult.value = {
+                        status: 'success',
+                        data: result.data || result
+                    };
+                    
+                    // Обновляем данные, чтобы привязанная комната отобразилась
+                    setTimeout(() => {
+                        refreshData();
+                    }, 2000);
+                } else {
+                    registrationResult.value = {
+                        status: 'failed',
+                        data: result || { error: 'Неизвестная ошибка сопряжения' }
+                    };
+                }
+            } catch (err) {
+                registrationResult.value = {
+                    status: 'failed',
+                    data: { error: err.message }
+                };
+            } finally {
+                registrationLoading.value = false;
+            }
         };
 
         // Глобальная функция для вызова из карты
@@ -489,7 +542,7 @@ const app = createApp({
             if (!classrooms.value) return [];
             
             let filtered = classrooms.value.filter(room => {
-                if (!useDemoMode.value && !room.hasRealData) {
+                if (!useDemoMode.value && !room.hasRealData && !isAdminAuthenticated.value) {
                     return false;
                 }
 
@@ -525,7 +578,7 @@ const app = createApp({
             if (!classrooms.value) return [];
             
             return classrooms.value.filter(room => {
-                if (!useDemoMode.value && !room.hasRealData) {
+                if (!useDemoMode.value && !room.hasRealData && !isAdminAuthenticated.value) {
                     return false;
                 }
                 
@@ -671,6 +724,13 @@ const app = createApp({
             sendDeviceCommand,
             confirmPowerOff,
             sendOTAUpdate,
+            showRegisterSensorModal,
+            selectedRoomForRegistration,
+            registrationLoading,
+            registrationResult,
+            openRegisterSensorModal,
+            closeRegisterSensor,
+            startSensorRegistration,
             historyFrom,
             historyTo,
             intervalSeconds,
