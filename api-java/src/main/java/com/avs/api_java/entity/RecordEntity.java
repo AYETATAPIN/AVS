@@ -15,6 +15,17 @@ public class RecordEntity {
     @Column(name = "sensor_id")
     private String sensorId;
 
+    @Transient
+    private boolean active = true;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
     @Column(name = "building_name")
     private String buildingName;
 

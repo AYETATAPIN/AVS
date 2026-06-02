@@ -14,6 +14,7 @@ const (
     CmdPowerOn       = "power_on"   
     CmdPowerOff      = "power_off"  
     CmdRegister      = "register"    
+    CmdUnbind        = "unbind"
 )
 
 // AllCommands возвращает список всех доступных команд
@@ -31,6 +32,7 @@ func AllCommands() []string {
         CmdPowerOn,
         CmdPowerOff,
         CmdRegister,
+        CmdUnbind,
     }
 }
 

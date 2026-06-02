@@ -238,6 +238,27 @@ const app = createApp({
             }
         };
 
+        const unbindSensor = async () => {
+            if (!currentDeviceId.value) return;
+            if (!confirm('Вы уверены, что хотите отвязать этот датчик от аудитории? Исторические данные будут сохранены.')) return;
+            
+            commandLoading.value = true;
+            commandResult.value = null;
+            try {
+                const result = await apiService.sendDeviceCommand(currentDeviceId.value, 'unbind');
+                commandResult.value = result;
+                
+                setTimeout(() => {
+                    refreshData();
+                    closeDeviceControl();
+                }, 1500);
+            } catch (err) {
+                commandResult.value = { status: 'failed', data: { error: err.message } };
+            } finally {
+                commandLoading.value = false;
+            }
+        };
+
         // Закрытие модального окна
         const closeDeviceControl = () => {
             showDeviceControlModal.value = false;
@@ -298,6 +319,15 @@ const app = createApp({
             const room = classrooms.value.find(r => r.id === roomId);
             if (room && isAdminAuthenticated.value) {
                 openDeviceControl(room);
+            } else {
+                alert('Только для администратора');
+            }
+        };
+
+        window.openRegisterSensorFromMap = (roomId) => {
+            const room = classrooms.value.find(r => r.id === roomId);
+            if (room && isAdminAuthenticated.value) {
+                openRegisterSensorModal(room);
             } else {
                 alert('Только для администратора');
             }
@@ -387,6 +417,7 @@ const app = createApp({
                     airQuality: calculateAirQuality(co2),
                     lastUpdate: new Date(),
                     hasRealData: true,
+                    isActive: true,
                     sensorId: `demo-${room.id}`
                 };
             });
@@ -438,16 +469,20 @@ const app = createApp({
                     const sensor = sensorMap[key];
                     
                     if (sensor) {
-                        return {
-                            ...room,
-                            co2: sensor.co2,
-                            temperature: sensor.temperature,
-                            humidity: sensor.humidity,
-                            airQuality: calculateAirQuality(sensor.co2),
-                            lastUpdate: new Date(sensor.ts),
-                            hasRealData: true,
-                            sensorId: sensor.sensorId
-                        };
+                        const hasReal = sensor.co2 > 0;
+                        if (hasReal) {
+                            return {
+                                ...room,
+                                co2: sensor.co2,
+                                temperature: sensor.temperature,
+                                humidity: sensor.humidity,
+                                airQuality: calculateAirQuality(sensor.co2),
+                                lastUpdate: new Date(sensor.ts),
+                                hasRealData: true,
+                                isActive: sensor.active !== undefined ? sensor.active : true,
+                                sensorId: sensor.sensorId
+                            };
+                        }
                     }
                 }
                 
@@ -459,6 +494,7 @@ const app = createApp({
                     airQuality: null,
                     lastUpdate: null,
                     hasRealData: false,
+                    isActive: false,
                     sensorId: null
                 };
             });
@@ -731,6 +767,7 @@ const app = createApp({
             openRegisterSensorModal,
             closeRegisterSensor,
             startSensorRegistration,
+            unbindSensor,
             historyFrom,
             historyTo,
             intervalSeconds,

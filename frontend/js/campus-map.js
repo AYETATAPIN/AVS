@@ -285,12 +285,19 @@ class CampusMap {
                     <p><small>Датчик: ${classroom.sensorId}</small></p>
                 ` : ''}
                 
-                <!-- Кнопка управления (только для админа) -->
+                <!-- Кнопка управления/привязки (только для админа) -->
                 ${isAdmin ? `
-                    <button onclick="window.openDeviceControlFromMap('${classroom.id}')" 
-                            class="device-control-btn">
-                            Управление устройством
-                    </button>
+                    ${classroom.isActive ? `
+                        <button onclick="window.openDeviceControlFromMap('${classroom.id}')" 
+                                class="device-control-btn" style="width: 100%; padding: 0.75rem; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 0.5rem; font-size: 0.9rem;">
+                                <i class="fas fa-microchip"></i> Управление устройством
+                        </button>
+                    ` : `
+                        <button onclick="window.openRegisterSensorFromMap('${classroom.id}')" 
+                                class="device-control-btn register-sensor-btn" style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 0.5rem; font-size: 0.9rem;">
+                                <i class="fas fa-link"></i> Привязать датчик
+                        </button>
+                    `}
                 ` : ''}
             </div>
         `;

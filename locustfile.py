@@ -137,6 +137,24 @@ class MqttSensorUser(User):
                         }
                     })
                     self.mqtt_client.publish(response_topic, response_payload, qos=1)
+            elif command == "unbind":
+                self.sensor = Sensor(
+                    id=self.sensor.id,
+                    index=self.sensor.index,
+                    room="",
+                    building=""
+                )
+                print(f"[{self.sensor.id}] Unbound!")
+                
+                response_topic = f"devices/{self.sensor.id}/response"
+                response_payload = json.dumps({
+                    "command_id": command_id,
+                    "status": "success",
+                    "data": {
+                        "message": "Successfully unbound"
+                    }
+                })
+                self.mqtt_client.publish(response_topic, response_payload, qos=1)
         except Exception as e:
             print(f"Error handling message on {msg.topic}: {e}")
 

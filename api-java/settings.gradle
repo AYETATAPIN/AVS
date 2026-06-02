@@ -1,1 +1,10 @@
+pluginManagement {
+    repositories {
+        maven {
+            url 'http://repo.huaweicloud.com/repository/maven/'
+            allowInsecureProtocol = true
+        }
+        gradlePluginPortal()
+    }
+}
 rootProject.name = 'api-java'
