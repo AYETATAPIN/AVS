@@ -646,8 +646,8 @@ const app = createApp({
         };
 
         const formatTime = (date) => {
-            if (!date) return '--:--';
-            return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            if (!date) return '--:--:--';
+            return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         };
 
         // Обновление данных

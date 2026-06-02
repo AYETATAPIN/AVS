@@ -220,13 +220,8 @@ class SensorAPIService {
     async sendDeviceCommand(deviceId, command, parameters = {}) {
         try {
             if (this.useDemoMode) {
-                console.log(`[DEMO] Команда ${command} устройству ${deviceId}`);
-                return {
-                    success: true,
-                    command_id: 'demo-' + Date.now(),
-                    status: 'success',
-                    data: { message: `Команда ${command} выполнена (демо)` }
-                };
+                console.log(`[DEMO] Попытка отправки команды ${command} устройству ${deviceId} отклонена`);
+                throw new Error('Управление устройствами недоступно в демо-режиме!');
             }
 
             // Единый эндпоинт для всех команд
