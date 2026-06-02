@@ -17,6 +17,14 @@ public interface ApiRepository extends JpaRepository<RecordEntity, Long> {
     List<RecordEntity> getCurrent();
 
     @Query(value = """
+        SELECT DISTINCT ON (building_name, room_number) *
+        FROM sensors
+        WHERE building_name != '' AND room_number != ''
+        ORDER BY building_name, room_number, ts DESC
+        """, nativeQuery = true)
+    List<RecordEntity> getLatestRoomRecords();
+
+    @Query(value = """
         SELECT
             to_timestamp(floor(extract(epoch from ts) / :intervalSeconds) * :intervalSeconds) AS bucket,
             ROUND(AVG(co2))::integer AS co2,

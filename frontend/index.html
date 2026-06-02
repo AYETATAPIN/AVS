@@ -179,7 +179,10 @@
                              :class="room.airQuality">
                             
                             <div class="card-header">
-                                <h3>{{ room.name }}</h3>
+                                <h3>
+                                    <span class="status-indicator-dot" :class="{ 'active': room.isActive }" :title="room.isActive ? 'Датчик активен' : 'Датчик не привязан (показываются архивные данные)'"></span>
+                                    {{ room.name }}
+                                </h3>
                                 <span class="quality-badge">{{ getQualityText(room.airQuality) }}</span>
                             </div>
                             
@@ -213,7 +216,7 @@
                                         <i class="fas fa-chart-line"></i> Подробная информация
                                     </button>
                                     <template v-if="isAdminAuthenticated">
-                                        <button v-if="room.hasRealData" @click="openDeviceControl(room)" class="action-btn device-btn">
+                                        <button v-if="room.isActive" @click="openDeviceControl(room)" class="action-btn device-btn">
                                             <i class="fas fa-microchip"></i> Управление устройством
                                         </button>
                                         <button v-else @click="openRegisterSensorModal(room)" class="action-btn device-btn register-sensor-btn">
@@ -469,21 +472,29 @@
                                     :disabled="commandLoading" class="command-btn">
                                 <i class="fas fa-arrows-alt"></i> Ориентация
                             </button>
-                            <button @click="sendDeviceCommand('enable_fall_detection', { enable: true })" 
-                                    :disabled="commandLoading" class="command-btn">
-                                <i class="fas fa-exclamation-triangle"></i> Вкл. детекцию падения
-                            </button>
-                            <button @click="sendDeviceCommand('enable_fall_detection', { enable: false })" 
-                                    :disabled="commandLoading" class="command-btn">
-                                <i class="fas fa-exclamation-triangle"></i> Выкл. детекцию падения
-                            </button>
-                            <button @click="sendDeviceCommand('power_on')" 
-                                    :disabled="commandLoading" class="command-btn power-on">
-                                <i class="fas fa-play"></i> Включить
-                            </button>
-                            <button @click="confirmPowerOff()" 
-                                    :disabled="commandLoading" class="command-btn power-off">
-                                <i class="fas fa-stop"></i> Выключить
+                            <div class="command-group-row" style="display: flex; gap: 0.5rem; width: 100%; grid-column: 1 / -1;">
+                                <button @click="sendDeviceCommand('enable_fall_detection', { enable: true })" 
+                                        :disabled="commandLoading" class="command-btn" style="flex: 1;">
+                                    <i class="fas fa-exclamation-triangle"></i> Вкл. детекцию
+                                </button>
+                                <button @click="sendDeviceCommand('enable_fall_detection', { enable: false })" 
+                                        :disabled="commandLoading" class="command-btn" style="flex: 1;">
+                                    <i class="fas fa-exclamation-triangle"></i> Выкл. детекцию
+                                </button>
+                            </div>
+                            <div class="command-group-row" style="display: flex; gap: 0.5rem; width: 100%; grid-column: 1 / -1;">
+                                <button @click="sendDeviceCommand('power_on')" 
+                                        :disabled="commandLoading" class="command-btn power-on" style="flex: 1;">
+                                    <i class="fas fa-play"></i> Включить
+                                </button>
+                                <button @click="confirmPowerOff()" 
+                                        :disabled="commandLoading" class="command-btn power-off" style="flex: 1;">
+                                    <i class="fas fa-stop"></i> Выключить
+                                </button>
+                            </div>
+                            <button @click="unbindSensor()" 
+                                    :disabled="commandLoading" class="command-btn unbind-btn">
+                                <i class="fas fa-link-slash"></i> Отвязать датчик
                             </button>
                             <!-- Для команд с параметрами можно добавить поля ввода -->
                         </div>

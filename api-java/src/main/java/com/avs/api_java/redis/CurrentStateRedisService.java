@@ -41,5 +41,12 @@ public class CurrentStateRedisService {
         out.sort(Comparator.comparing(RecordEntity::getSensorId, Comparator.nullsLast(String::compareTo)));
         return out;
     }
+
+    public void deleteSensor(String sensorId) {
+        try {
+            hashOps.delete("avs:sensors:current", sensorId);
+        } catch (Exception ignored) {
+        }
+    }
 }
 

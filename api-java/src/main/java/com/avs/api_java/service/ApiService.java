@@ -20,15 +20,37 @@ public class ApiService {
         this.currentStateRedisService = currentStateRedisService;
     }
 
-    public List<RecordEntity> getCurrentState (){
+    public List<RecordEntity> getCurrentState() {
+        List<RecordEntity> activeSensors;
         try {
-            List<RecordEntity> fromRedis = currentStateRedisService.getCurrentState();
-            if (!fromRedis.isEmpty()) {
-                return fromRedis;
+            activeSensors = currentStateRedisService.getCurrentState();
+            if (activeSensors.isEmpty()) {
+                activeSensors = repo.getCurrent();
             }
         } catch (DataAccessException ignored) {
+            activeSensors = repo.getCurrent();
         }
-        return repo.getCurrent();
+
+        java.util.Map<String, String> activeSensorRooms = new java.util.HashMap<>();
+        for (RecordEntity sensor : activeSensors) {
+            if (sensor.getSensorId() != null && 
+                sensor.getBuildingName() != null && !sensor.getBuildingName().trim().isEmpty() &&
+                sensor.getRoomNumber() != null && !sensor.getRoomNumber().trim().isEmpty()) {
+                activeSensorRooms.put(sensor.getSensorId(), sensor.getBuildingName() + "|" + sensor.getRoomNumber());
+            }
+        }
+
+        List<RecordEntity> roomRecords = repo.getLatestRoomRecords();
+        for (RecordEntity record : roomRecords) {
+            String activeRoom = activeSensorRooms.get(record.getSensorId());
+            String currentRoomKey = record.getBuildingName() + "|" + record.getRoomNumber();
+            if (activeRoom != null && activeRoom.equals(currentRoomKey)) {
+                record.setActive(true);
+            } else {
+                record.setActive(false);
+            }
+        }
+        return roomRecords;
     }
 
     public List<RecordEntity> getSensorHistoryAggregated(String sensorId, Instant from, Instant to, long intervalSeconds) {
