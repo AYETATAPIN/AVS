@@ -154,7 +154,8 @@ const ChartComponents = {
                                             let label = context.dataset.label || '';
                                             if (label) label += ': ';
                                             if (context.parsed.y !== null) {
-                                                label += context.parsed.y;
+                                                let roundedVal = Number(context.parsed.y.toFixed(1));
+                                                label += roundedVal;
                                                 if (context.dataset.label.includes('CO₂')) label += ' ppm';
                                                 else if (context.dataset.label.includes('Температура')) label += '°C';
                                                 else if (context.dataset.label.includes('Влажность')) label += '%';
