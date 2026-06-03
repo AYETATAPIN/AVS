@@ -31,26 +31,10 @@ public class ApiService {
             activeSensors = repo.getCurrent();
         }
 
-        java.util.Map<String, String> activeSensorRooms = new java.util.HashMap<>();
         for (RecordEntity sensor : activeSensors) {
-            if (sensor.getSensorId() != null && 
-                sensor.getBuildingName() != null && !sensor.getBuildingName().trim().isEmpty() &&
-                sensor.getRoomNumber() != null && !sensor.getRoomNumber().trim().isEmpty()) {
-                activeSensorRooms.put(sensor.getSensorId(), sensor.getBuildingName() + "|" + sensor.getRoomNumber());
-            }
+            sensor.setActive(true);
         }
-
-        List<RecordEntity> roomRecords = repo.getLatestRoomRecords();
-        for (RecordEntity record : roomRecords) {
-            String activeRoom = activeSensorRooms.get(record.getSensorId());
-            String currentRoomKey = record.getBuildingName() + "|" + record.getRoomNumber();
-            if (activeRoom != null && activeRoom.equals(currentRoomKey)) {
-                record.setActive(true);
-            } else {
-                record.setActive(false);
-            }
-        }
-        return roomRecords;
+        return activeSensors;
     }
 
     public List<RecordEntity> getSensorHistoryAggregated(String sensorId, Instant from, Instant to, long intervalSeconds) {
