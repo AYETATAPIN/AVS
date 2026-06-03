@@ -65,6 +65,7 @@ public class ApiService {
         return roomRecords;
     }
 
+
     public List<RecordEntity> getSensorHistoryAggregated(String sensorId, Instant from, Instant to, long intervalSeconds) {
         return repo.getHistoryAggregated(sensorId, from, to, intervalSeconds).stream().map(row -> {
             RecordEntity record = new RecordEntity();
