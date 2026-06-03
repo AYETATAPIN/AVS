@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS sensors (
 SELECT create_hypertable('sensors', 'ts', chunk_time_interval => INTERVAL '1 day', if_not_exists => TRUE);
 
 CREATE INDEX IF NOT EXISTS idx_sensors_sensor_id_ts ON sensors (sensor_id, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_sensors_room_ts ON sensors (building_name, room_number, ts DESC);
 
 ALTER TABLE sensors SET (timescaledb.compress, timescaledb.compress_segmentby = 'sensor_id');
 SELECT add_compression_policy('sensors', INTERVAL '1 day');

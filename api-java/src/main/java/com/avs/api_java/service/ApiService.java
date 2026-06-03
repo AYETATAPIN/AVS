@@ -15,12 +15,21 @@ public class ApiService {
     private final ApiRepository repo;
     private final CurrentStateRedisService currentStateRedisService;
 
+    private List<RecordEntity> cachedState = null;
+    private long lastCacheTime = 0;
+    private static final long CACHE_TTL_MS = 5000; // 5 seconds
+
     public ApiService(ApiRepository repo, CurrentStateRedisService currentStateRedisService){
         this.repo=repo;
         this.currentStateRedisService = currentStateRedisService;
     }
 
-    public List<RecordEntity> getCurrentState() {
+    public synchronized List<RecordEntity> getCurrentState() {
+        long now = System.currentTimeMillis();
+        if (cachedState != null && (now - lastCacheTime) < CACHE_TTL_MS) {
+            return cachedState;
+        }
+
         List<RecordEntity> activeSensors;
         try {
             activeSensors = currentStateRedisService.getCurrentState();
@@ -31,11 +40,31 @@ public class ApiService {
             activeSensors = repo.getCurrent();
         }
 
+        java.util.Map<String, String> activeSensorRooms = new java.util.HashMap<>();
         for (RecordEntity sensor : activeSensors) {
-            sensor.setActive(true);
+            if (sensor.getSensorId() != null && 
+                sensor.getBuildingName() != null && !sensor.getBuildingName().trim().isEmpty() &&
+                sensor.getRoomNumber() != null && !sensor.getRoomNumber().trim().isEmpty()) {
+                activeSensorRooms.put(sensor.getSensorId(), sensor.getBuildingName() + "|" + sensor.getRoomNumber());
+            }
         }
-        return activeSensors;
+
+        List<RecordEntity> roomRecords = repo.getLatestRoomRecords();
+        for (RecordEntity record : roomRecords) {
+            String activeRoom = activeSensorRooms.get(record.getSensorId());
+            String currentRoomKey = record.getBuildingName() + "|" + record.getRoomNumber();
+            if (activeRoom != null && activeRoom.equals(currentRoomKey)) {
+                record.setActive(true);
+            } else {
+                record.setActive(false);
+            }
+        }
+
+        cachedState = roomRecords;
+        lastCacheTime = now;
+        return roomRecords;
     }
+
 
     public List<RecordEntity> getSensorHistoryAggregated(String sensorId, Instant from, Instant to, long intervalSeconds) {
         return repo.getHistoryAggregated(sensorId, from, to, intervalSeconds).stream().map(row -> {
