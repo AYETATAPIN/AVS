@@ -19,7 +19,8 @@ public interface ApiRepository extends JpaRepository<RecordEntity, Long> {
     @Query(value = """
         SELECT DISTINCT ON (building_name, room_number) *
         FROM sensors
-        WHERE building_name != '' AND room_number != ''
+        WHERE ts > NOW() - INTERVAL '7 days'
+          AND building_name != '' AND room_number != ''
         ORDER BY building_name, room_number, ts DESC
         """, nativeQuery = true)
     List<RecordEntity> getLatestRoomRecords();
