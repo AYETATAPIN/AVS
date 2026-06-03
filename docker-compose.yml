@@ -62,6 +62,7 @@ services:
   frontend:
     image: nginx:latest
     ports:
+      - 80:80
       - 443:443
       - 8883:8883
     volumes:
