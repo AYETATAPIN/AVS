@@ -19,7 +19,7 @@ public interface ApiRepository extends JpaRepository<RecordEntity, Long> {
     @Query(value = """
         SELECT DISTINCT ON (building_name, room_number) *
         FROM sensors
-        WHERE ts > NOW() - INTERVAL '15 days'
+        WHERE ts > NOW() - INTERVAL '30 days'
           AND building_name != '' AND room_number != ''
         ORDER BY building_name, room_number, ts DESC
         """, nativeQuery = true)
