@@ -33,11 +33,8 @@ public class ApiService {
         List<RecordEntity> activeSensors;
         try {
             activeSensors = currentStateRedisService.getCurrentState();
-            if (activeSensors.isEmpty()) {
-                activeSensors = repo.getCurrent();
-            }
         } catch (DataAccessException ignored) {
-            activeSensors = repo.getCurrent();
+            activeSensors = new java.util.ArrayList<>();
         }
 
         java.util.Map<String, String> activeSensorRooms = new java.util.HashMap<>();
