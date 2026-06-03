@@ -15,12 +15,21 @@ public class ApiService {
     private final ApiRepository repo;
     private final CurrentStateRedisService currentStateRedisService;
 
+    private List<RecordEntity> cachedState = null;
+    private long lastCacheTime = 0;
+    private static final long CACHE_TTL_MS = 5000; // 5 seconds
+
     public ApiService(ApiRepository repo, CurrentStateRedisService currentStateRedisService){
         this.repo=repo;
         this.currentStateRedisService = currentStateRedisService;
     }
 
-    public List<RecordEntity> getCurrentState() {
+    public synchronized List<RecordEntity> getCurrentState() {
+        long now = System.currentTimeMillis();
+        if (cachedState != null && (now - lastCacheTime) < CACHE_TTL_MS) {
+            return cachedState;
+        }
+
         List<RecordEntity> activeSensors;
         try {
             activeSensors = currentStateRedisService.getCurrentState();
@@ -50,6 +59,9 @@ public class ApiService {
                 record.setActive(false);
             }
         }
+
+        cachedState = roomRecords;
+        lastCacheTime = now;
         return roomRecords;
     }
 
