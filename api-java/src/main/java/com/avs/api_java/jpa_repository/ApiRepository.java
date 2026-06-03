@@ -17,11 +17,27 @@ public interface ApiRepository extends JpaRepository<RecordEntity, Long> {
     List<RecordEntity> getCurrent();
 
     @Query(value = """
-        SELECT DISTINCT ON (building_name, room_number) *
-        FROM sensors
-        WHERE ts > NOW() - INTERVAL '7 days'
-          AND building_name != '' AND room_number != ''
-        ORDER BY building_name, room_number, ts DESC
+        WITH RECURSIVE skip AS (
+          (
+            SELECT id, building_name, room_number, ts, co2, temperature, humidity, sensor_id
+            FROM sensors
+            WHERE building_name != '' AND room_number != ''
+            ORDER BY building_name, room_number, ts DESC
+            LIMIT 1
+          )
+          UNION ALL
+          SELECT s.id, s.building_name, s.room_number, s.ts, s.co2, s.temperature, s.humidity, s.sensor_id
+          FROM skip,
+          LATERAL (
+            SELECT id, building_name, room_number, ts, co2, temperature, humidity, sensor_id
+            FROM sensors
+            WHERE building_name != '' AND room_number != ''
+              AND (sensors.building_name, sensors.room_number) > (skip.building_name, skip.room_number)
+            ORDER BY building_name, room_number, ts DESC
+            LIMIT 1
+          ) s
+        )
+        SELECT * FROM skip
         """, nativeQuery = true)
     List<RecordEntity> getLatestRoomRecords();
 
