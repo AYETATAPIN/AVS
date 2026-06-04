@@ -13,10 +13,27 @@ type Client struct {
 }
 
 func NewClient(opts *mqtt.ClientOptions, handler *Handler) *Client {
-    return &Client{
-        client:  mqtt.NewClient(opts),
-        handler: handler,
-    }
+	opts.OnConnect = func(c mqtt.Client) {
+		log.Println("Connected to MQTT broker")
+		topics := []string{
+			"sensors/+/data",
+			"sensors/+/status",
+			"commands/+/+",
+		}
+		for _, topic := range topics {
+			token := c.Subscribe(topic, 1, handler.HandleMessage)
+			if token.Wait() && token.Error() != nil {
+				log.Printf("Failed to subscribe to %s on connect: %v", topic, token.Error())
+			} else {
+				log.Printf("Subscribed to: %s", topic)
+			}
+		}
+	}
+
+	return &Client{
+		client:  mqtt.NewClient(opts),
+		handler: handler,
+	}
 }
 
 func NewClientOptions(broker, clientID string) *mqtt.ClientOptions {

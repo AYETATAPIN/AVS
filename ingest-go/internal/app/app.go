@@ -90,19 +90,7 @@ func Run(cfg *config.Config) error {
     defer client.Disconnect()
     log.Println("MQTT connection established")
 
-    // Подписки
-    topics := []string{
-        "sensors/+/data",
-        "sensors/+/status",
-        "commands/+/+",
-    }
-    for _, topic := range topics {
-        if err := client.Subscribe(topic, 1); err != nil {
-            log.Printf("Failed to subscribe to %s: %v", topic, err)
-        } else {
-            log.Printf("Subscribed to: %s", topic)
-        }
-    }
+
 
     // Graceful shutdown
     sigChan := make(chan os.Signal, 1)
