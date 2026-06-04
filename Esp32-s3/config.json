@@ -1,0 +1,23 @@
+{
+  "PINS": {
+    "sensors": {
+      "dht11": 5,
+      "mq135": 4,
+      "led": 16
+    }
+  },
+  "WIFI": {
+    "ssid": "Nataliy-lozhkina",
+    "password": "154378154378",
+    "timeout": 20
+  },
+  "MQTT": {
+    "ip": "192.168.0.100",
+    "port": 1883,
+    "sensor_id": "esp32_001"
+  },
+  "DEVICE_LOCATION": {
+    "buildingName": "Main Building",
+    "roomNumber": "101"
+  }
+}
