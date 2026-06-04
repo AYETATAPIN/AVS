@@ -1,0 +1,147 @@
+{
+  "PINS": {
+    "sensors": {
+      "dht11": 5,
+      "mq135": 34,
+      "led": 2
+    },
+    "i2c": {
+      "sda": 21,
+      "scl": 22
+    }
+  },
+  "WIFI": {
+    "connect_timeout_sec": 20,
+    "profiles_priority": [
+      "fallback",
+      "eduroam"
+    ],
+    "profiles": {
+      "eduroam": {
+        "type": "eduroam",
+        "ssid": "eduroam",
+        "identity": "anonymous@g.nsu.ru",
+        "username": "d.demidov@g.nsu.ru",
+        "password": "19091990Kub",
+        "connect_timeout_sec": 120,
+        "use_ca_cert": false,
+        "ca_cert_path": "eduroam_ca.pem"
+      },
+      "fallback": {
+        "type": "wpa2",
+        "ssid": "BAZOONKERS",
+        "password": "4244257600",
+        "connect_timeout_sec": 20
+      }
+    }
+  },
+  "MQTT": {
+    "active_profile": "auto",
+    "profile_by_wifi": {
+      "fallback": "remote",
+      "eduroam": "remote"
+    },
+    "profiles": {
+      "local": {
+        "host": "192.168.1.101",
+        "port": 1883,
+        "connect_timeout_sec": 8,
+        "keepalive_sec": 60,
+        "username": "avs",
+        "password": "avs",
+        "SSL": {
+          "enabled": false,
+          "server_hostname": ""
+        }
+      },
+      "remote": {
+        "host": "nsu-metrics.ru",
+        "port": 8883,
+        "connect_timeout_sec": 8,
+        "keepalive_sec": 60,
+        "username": "avs",
+        "password": "avs",
+        "SSL": {
+          "enabled": true,
+          "server_hostname": "nsu-metrics.ru"
+        }
+      }
+    },
+    "host": "192.168.10.131",
+    "port": 1883,
+    "connect_timeout_sec": 8,
+    "keepalive_sec": 60,
+    "sensor_id": "sensor_530",
+    "username": "avs",
+    "password": "avs",
+    "SSL": {
+      "enabled": false,
+      "server_hostname": ""
+    }
+  },
+  "DEVICE_LOCATION": {
+    "buildingName": "Educational_1",
+    "roomNumber": "1121",
+    "isRegistered": true
+  },
+  "LOCATION_MAPPING": {
+    "file": "location_mapping.json"
+  },
+  "POWER": {
+    "active_poll_ms": 200,
+    "standby_poll_ms": 5000,
+    "snapshot_interval_sec": 10,
+    "wifi_pm_active": "PM_PERFORMANCE",
+    "wifi_pm_standby": "PM_POWERSAVE"
+  },
+  "FALL_DETECTION": {
+    "history_size": 5,
+    "movement_threshold_g": 0.65,
+    "magnitude_delta_threshold_g": 0.65,
+    "impact_threshold_g": 2.2,
+    "freefall_threshold_g": 0.35
+  },
+  "FIRMWARE": {
+    "version": "esp32u-custom-ota-eduroam-v1"
+  },
+  "TIME": {
+    "min_year": 2024,
+    "ntp_hosts": [
+      "pool.ntp.org",
+      "time.google.com",
+      "time.cloudflare.com",
+      "129.6.15.28",
+      "132.163.96.1"
+    ],
+    "ntp_retries_per_host": 2,
+    "ntp_retry_pause_ms": 250,
+    "ntp_socket_timeout_ms": 2000,
+    "fallback_to_build_date": true,
+    "fallback_to_min_year": false
+  },
+  "CALIBRATION": {
+    "enabled": true,
+    "guard_invalid": false,
+    "mq135_rzero": 65.7,
+    "mq135_min_ppm": 350,
+    "mq135_max_ppm": 5000,
+    "mq135_samples": 5,
+    "mq135_sample_delay_ms": 120,
+    "mq135_use_th_correction": false,
+    "dht_temp_a": 1.0,
+    "dht_temp_b": 0.0,
+    "dht_hum_a": 1.0,
+    "dht_hum_b": 0.0,
+    "include_diagnostics": false
+  },
+  "CALIBRATION_SESSION": {
+    "interval_sec": 2,
+    "esp_log_file": "calibration_esp_raw.csv",
+    "max_samples": 0
+  },
+  "BATTERY": {
+    "chemistry": "liion_2s",
+    "min_voltage": 6.0,
+    "max_voltage": 8.4
+  }
+}
